@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -14,6 +15,7 @@ public static class MazeUtilities
 	public static void Dig(this MazeTile[,] grid, MazeShift shift)
 		=> grid.Dig(shift.from, shift.to, shift.heading);
 
+	// Just returns whatever opposite directions are in `from`
 	public static MazeDirection Opposite(this MazeDirection from)
 	{
 		MazeDirection to = 0;
@@ -26,6 +28,12 @@ public static class MazeUtilities
 		if ((MazeDirection.East & from) != 0)
 			to |= MazeDirection.West;
 		return to;
+	}
+
+	// Useful for LINQ queries
+	public static IEnumerable<MazeTile> Flatten(this MazeTile[,] grid)
+	{
+		foreach (MazeTile tile in grid) yield return tile;
 	}
 
 	public static int ComputeSeed(string seed, int computations = 1)
