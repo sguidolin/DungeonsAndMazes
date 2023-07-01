@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Text;
+using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 [DisallowMultipleComponent]
 public class MazeGridLayout : MonoBehaviour
@@ -13,19 +13,35 @@ public class MazeGridLayout : MonoBehaviour
 	[Range(0f, 1f)] public float fillRatio = 0.5f;
 	public bool allowOverfilling;
 
-	public Text _display;
+	public TextMeshProUGUI _display;
 
 	private MazeGrid _grid;
 	private bool _isGenerating = false;
 
 	void Start()
 	{
-		Generate();
+		if (string.IsNullOrEmpty(seed))
+			NewSeed();
+		else
+			Generate();
+	}
+
+	void Update()
+	{
+		if (!_isGenerating && Input.GetKeyDown(KeyCode.R))
+			NewSeed();
 	}
 
 	[ContextMenu("Generate a new dungeon")]
 	public void Generate()
 	{
+		StartCoroutine(BuildDungeon());
+	}
+	[ContextMenu("Generate from a random seed")]
+	public void NewSeed()
+	{
+		if (_isGenerating) return;
+		seed = RandomSeedGenerator.NewSeed();
 		StartCoroutine(BuildDungeon());
 	}
 
@@ -35,17 +51,16 @@ public class MazeGridLayout : MonoBehaviour
 
 		_isGenerating = true;
 		if (_display) _display.text = "Generating...";
-		//Debug.Log($"[{Time.time}] Starting dungeon generation...");
 		_grid = new MazeGrid(seed, depth, width, fillRatio, allowOverfilling);
+		float startTime = Time.time;
 		IEnumerator operation = _grid.Generate();
 		while (operation.MoveNext())
 		{
 			// Print updated status
+			// ((float)_grid.Tiled / (float)_grid.Tiles).ToString("P0") <- % (no decimals)
 			if (_display) _display.text = $"Generating...\n{_grid.Tiled} out of {_grid.Tiles}";
 			yield return operation.Current;
 		}
-		//yield return _grid.Generate();
-		//Debug.Log($"[{Time.time}] Dungeon generated!");
 		StringBuilder layout = new StringBuilder();
 		layout.AppendLine(_grid.Seed);
 		for (int x = 0; x < depth; x++)
@@ -54,6 +69,7 @@ public class MazeGridLayout : MonoBehaviour
 			for (int y = 0; y < width; y++)
 				layout.Append(_grid[x, y]);
 		}
+		layout.AppendLine($"\n\nGenerated in {Mathf.RoundToInt(Time.time - startTime)} seconds.");
 		if (_display) _display.text = layout.ToString();
 		_isGenerating = false;
 	}

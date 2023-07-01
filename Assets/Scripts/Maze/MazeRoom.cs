@@ -1,70 +1,40 @@
-using Unity.Burst.Intrinsics;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
-public struct MazeRoom
+[DisallowMultipleComponent]
+public class MazeRoom : MonoBehaviour
 {
-	private MazeDirection _entrances;
+	private const float ROOM_UNIT_SIZE = 1f;
 
-	public byte Value => (byte)_entrances;
+	[Header("Room Type")]
+	[SerializeField]
+	private MazeTile _tile;
+	private MazeEvent _event;
+	[SerializeField]
+	private FogController _fog;
+	[SerializeField]
+	private bool _isTunnel = false;
 
-	public void CreateOpening(MazeDirection direction)
-		=> _entrances |= direction;
+	[Header("World Data")]
+	[SerializeField]
+	private MazePosition _position;
+	[SerializeField]
+	private Vector3 _worldPosition;
+	// TODO: Still evaluating how much data I would need if I were to calculate a Bezier
+	[SerializeField]
+	private MazeConnection[] _paths;
 
-#if UNITY_EDITOR
-	public override string ToString()
+	public MazeTile Tile => _tile;
+	public MazeEvent Event => _event;
+	public bool IsTunnel => _isTunnel;
+
+	public void SetPosition(MazePosition gridPosition)
 	{
-		char unicode = '\0';
-		switch (_entrances)
-		{
-			case MazeDirection.North:
-				unicode = (char)0x2568;
-				break;
-			case MazeDirection.South:
-				unicode = (char)0x2565;
-				break;
-			case MazeDirection.West:
-				unicode = (char)0x2561;
-				break;
-			case MazeDirection.East:
-				unicode = (char)0x255E;
-				break;
-			case MazeDirection.North | MazeDirection.West:
-				unicode = (char)0x255D;
-				break;
-			case MazeDirection.North | MazeDirection.East:
-				unicode = (char)0x255A;
-				break;
-			case MazeDirection.North | MazeDirection.South:
-				unicode = (char)0x2551;
-				break;
-			case MazeDirection.South | MazeDirection.West:
-				unicode = (char)0x2557;
-				break;
-			case MazeDirection.South | MazeDirection.East:
-				unicode = (char)0x2554;
-				break;
-			case MazeDirection.West | MazeDirection.East:
-				unicode = (char)0x2550;
-				break;
-			case MazeDirection.North | MazeDirection.West | MazeDirection.East:
-				unicode = (char)0x2569;
-				break;
-			case MazeDirection.South | MazeDirection.West | MazeDirection.East:
-				unicode = (char)0x2566;
-				break;
-			case MazeDirection.North | MazeDirection.South | MazeDirection.West:
-				unicode = (char)0x2563;
-				break;
-			case MazeDirection.North | MazeDirection.South | MazeDirection.East:
-				unicode = (char)0x2560;
-				break;
-			case MazeDirection.North | MazeDirection.South | MazeDirection.West | MazeDirection.East:
-				unicode = (char)0x256C;
-				break;
-			default:
-				unicode = (char)0x2592;
-				break;
-		}
-		return unicode.ToString();
+		_position = gridPosition;
+		// Stored worldPosition is our localPosition really
+		// It's just an internal reference to know where the pivot is in order to move between rooms
+		transform.localPosition = gridPosition.ToWorldPosition();
+		_worldPosition = transform.localPosition;
 	}
-#endif
 }

@@ -3,8 +3,17 @@ using UnityEngine;
 [RequireComponent(typeof(Camera))]
 public class SimpleFollow : MonoBehaviour
 {
+	private Camera _camera;
+
 	public GameObject target;
+	[Range(1f, 5f)] public float distance = 1f;
 	public Vector3 offset = Vector3.zero;
+
+	void Awake()
+	{
+		_camera = GetComponent<Camera>();
+		_camera.orthographic = true;
+	}
 
 	void Start()
 	{
@@ -12,5 +21,11 @@ public class SimpleFollow : MonoBehaviour
 			enabled = false;
 	}
 
-	void LateUpdate() => transform.position = target.transform.position + offset;
+	void LateUpdate()
+	{
+		// Update the camera distance by the otrographic size
+		_camera.orthographicSize = distance;
+		// Update position to follow the target (with offset)
+		transform.position = target.transform.position + offset;
+	}
 }

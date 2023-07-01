@@ -1,8 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
 using UnityEngine;
 
 public class MazeGrid
@@ -13,12 +11,12 @@ public class MazeGrid
 
 	private float _fillRatio;
 	private bool _allowOverfill;
-	private MazeRoom[,] _grid;
+	private MazeTile[,] _grid;
 
 	public string Seed => _seed;
 	public int Width => _width;
 	public int Depth => _depth;
-	public MazeRoom[,] Grid => _grid;
+	public MazeTile[,] Grid => _grid;
 
 	public int Tiles
 	{
@@ -32,7 +30,7 @@ public class MazeGrid
 		get
 		{
 			int count = 0;
-			foreach (MazeRoom room in _grid)
+			foreach (MazeTile room in _grid)
 				if (room.Value != 0) count++;
 			return count;
 		}
@@ -40,14 +38,14 @@ public class MazeGrid
 
 	public bool Filled => Tiled >= Tiles;
 
-	public MazeRoom this[int x, int y] => _grid[x, y];
-	public MazeRoom this[MazePosition p] => _grid[p.x, p.y];
+	public MazeTile this[int x, int y] => _grid[x, y];
+	public MazeTile this[MazePosition p] => _grid[p.x, p.y];
 
 	public MazeGrid(string seed, int depth, int width, float fillRatio = 0.5f, bool allowOverfilling = false)
 	{
 		_seed = seed;
 		// Calculate the hash
-		_hash = ComputeSeed(seed);
+		_hash = MazeUtilities.ComputeSeed(seed);
 		// Configure the size of the grid
 		// Depth is the x-axis
 		_depth = depth;
@@ -57,7 +55,7 @@ public class MazeGrid
 		_fillRatio = fillRatio;
 		_allowOverfill = allowOverfilling;
 		// Initialize the grid
-		_grid = new MazeRoom[depth, width];
+		_grid = new MazeTile[depth, width];
 		// Setup the random instance
 		Random.InitState(_hash);
 	}
@@ -91,8 +89,11 @@ public class MazeGrid
 			// Progressively work every shift
 			foreach (MazeWorker worker in workers)
 			{
+				MazeShift shift = worker.Work(this);
+				// If we invalidated the shift then ignore it
+				if (!shift.isValid) continue;
 				// Dig the result of our worker's shift
-				_grid.Dig(worker.Work(this));
+				_grid.Dig(shift);
 				// After a worker has completed their shift, check if we should keep going
 				// Since we might not allow overfilling then we need to stop when the quota is met
 				if (!_allowOverfill && Filled) break;
@@ -107,16 +108,32 @@ public class MazeGrid
 		}
 	}
 
-	public static int ComputeSeed(string seed)
+	public bool IsMoveLegal(MazeDirection direction, MazePosition currentPosition)
 	{
-		// Try converting string to int
-		// If we succeed then it's our seed
-		if (!int.TryParse(seed, out int hash))
-		{
-			// Otherwise we compute string
-			using SHA1 sha = SHA1.Create();
-			hash = System.BitConverter.ToInt32(sha.ComputeHash(Encoding.UTF8.GetBytes(seed)));
-		}
-		return hash;
+		// Evaluate the border cases
+		if (direction == MazeDirection.North && currentPosition.x == 0)
+			return false;
+		if (direction == MazeDirection.South && currentPosition.x == _depth - 1)
+			return false;
+		if (direction == MazeDirection.West && currentPosition.y == 0)
+			return false;
+		if (direction == MazeDirection.East && currentPosition.y == _width - 1)
+			return false;
+		return true;
 	}
+
+	// These combinations can result in a tunnel
+	private static readonly MazeTile[] TUNNEL_ROOMS = new MazeTile[]
+	{
+		MazeDirection.North | MazeDirection.West, MazeDirection.North | MazeDirection.East,
+		MazeDirection.South | MazeDirection.West, MazeDirection.South | MazeDirection.East,
+		MazeDirection.North | MazeDirection.South | MazeDirection.West | MazeDirection.East
+	};
+
+	// A tunnel must be in the combo list, and not hold an event
+	public static bool CanBeTunnel(MazeRoom room)
+		=> room.Event == null && TUNNEL_ROOMS.Contains<MazeTile>(room.Tile);
+	// An event must not be a tunnel, and be an actual room (not a filled block)
+	public static bool CanBeEvent(MazeRoom room)
+		=> !room.IsTunnel && room.Tile != MazeTile.Block;
 }

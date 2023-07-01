@@ -1,9 +1,10 @@
 using UnityEngine;
 
+[System.Serializable]
 public struct MazePosition
 {
-	public int x;
-	public int y;
+	[Min(0)] public int x;
+	[Min(0)] public int y;
 
 	public MazePosition(int x, int y)
 	{
@@ -32,6 +33,8 @@ public struct MazePosition
 
 	public static implicit operator Vector2(MazePosition p) => new Vector2(p.x, p.y);
 	public static implicit operator MazePosition(Vector2 v) => new MazePosition((int)v.x, (int)v.y);
+
+	public Vector3 ToWorldPosition() => new Vector3(-x, 0f, -y);
 
 	public override string ToString() => $"({x}, {y})";
 }
