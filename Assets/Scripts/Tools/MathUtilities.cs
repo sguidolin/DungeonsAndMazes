@@ -41,4 +41,11 @@ public static class MathUtilities
 	public static Vector3 Bezier3Tangent(float t, params Vector3[] points) =>
 		(Bezier3(t + SMALL_FLOAT, points) - Bezier3(t, points)).normalized;
 	#endregion
+
+	public static float Round(float value, int decimals)
+	{
+		if (decimals < 0) decimals = 0;
+		float power = Mathf.Pow(10f, decimals);
+		return Mathf.Round(value * power) / power;
+	}
 }

@@ -18,6 +18,10 @@ public class MazeGrid
 	public int Depth => _depth;
 	public MazeTile[,] Grid => _grid;
 
+	// Dungeon tiles capacity
+	public float Ratio => _fillRatio;
+	public int Capacity => _width * _depth;
+
 	public int Tiles
 	{
 		get
@@ -36,7 +40,8 @@ public class MazeGrid
 		}
 	}
 
-	public bool Filled => Tiled >= Tiles;
+	public bool IsFilled => Tiled >= Tiles;
+	public bool IsGenerated { get; private set; } = false;
 
 	public MazeTile this[int x, int y] => _grid[x, y];
 	public MazeTile this[MazePosition p] => _grid[p.x, p.y];
@@ -62,6 +67,8 @@ public class MazeGrid
 
 	public IEnumerator Generate()
 	{
+		// Flag as process started
+		IsGenerated = false;
 		// Calculate the average size of the grid
 		// This will be used in the random for the lifespan of the workers
 		int size = (_width + _depth) / 2;
@@ -72,7 +79,7 @@ public class MazeGrid
 		// Scale the number of max workers to the size by a range from 2 to 4
 		int maxWorkers = size / Random.Range(2, 5);
 
-		while (!Filled)
+		while (!IsFilled)
 		{
 			// If we have no workers, hire more
 			if (workers.Count == 0)
@@ -96,13 +103,15 @@ public class MazeGrid
 				_grid.Dig(shift);
 				// After a worker has completed their shift, check if we should keep going
 				// Since we might not allow overfilling then we need to stop when the quota is met
-				if (!_allowOverfill && Filled) break;
+				if (!_allowOverfill && IsFilled) break;
 			}
 			// Update start position with the worker that has the most work left in them
 			start = workers.OrderBy<MazeWorker, int>(worker => worker.Lifespan)
 				.First<MazeWorker>().Position;
 			// Finally, let those who are done retire by updating our list
 			workers = workers.Where<MazeWorker>(worker => !worker.Retired).ToList<MazeWorker>();
+			// Update the process status
+			IsGenerated = IsFilled;
 			// Let the next batch be handled in the next frame
 			yield return null;
 		}
