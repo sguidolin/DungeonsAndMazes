@@ -21,4 +21,48 @@ public class MazeDungeon
 	 * - It could have a FogController for the fog
 	 * - Maybe it could hold the MazeEvent itself and just 
 	 */
+	private MazeGrid _grid;
+	private MazeRoom[,] _rooms;
+
+	private MazeRoom[] _blueprints;
+
+	public MazeDungeon(string seed, int depth, int width, float fillRatio, bool allowOverfilling, MazeRoom[] blueprints)
+	{
+		// Create instance of MazeGrid
+		_grid = new MazeGrid(seed, depth, width, fillRatio, allowOverfilling);
+		// Instantiate matrix for rooms
+		_rooms = new MazeRoom[depth, width];
+		// Store the array for the blueprints
+		_blueprints = blueprints;
+	}
+
+	public IEnumerator Generate()
+	{
+		// Generate the grid first
+		yield return BuildGrid();
+		// Generate the layout
+		yield return BuildLayout();
+	}
+
+	private IEnumerator BuildGrid()
+	{
+		IEnumerator builder = _grid.Generate();
+		while (builder.MoveNext())
+		{
+			// Set here the information for the load screen
+			yield return builder.Current;
+		}
+	}
+
+	private IEnumerator BuildLayout()
+	{
+		for (int x = 0; x < _grid.Depth; x++)
+		{
+			for (int y = 0; y < _grid.Width; y++)
+			{
+				
+				yield return null;
+			}
+		}
+	}
 }

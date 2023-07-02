@@ -12,8 +12,16 @@ public struct MazeTile
 	public void CreateOpening(MazeDirection direction)
 		=> _entrances |= direction;
 
-	public static MazeDirection Block => (MazeDirection)0;
-	public static MazeDirection Open => MazeDirection.North | MazeDirection.South | MazeDirection.West | MazeDirection.West;
+	public static MazeDirection Block
+		=> (MazeDirection)0;
+	public static MazeDirection Open
+		=> MazeDirection.North | MazeDirection.South | MazeDirection.West | MazeDirection.West;
+
+	#region Operators Overloads
+	public static bool operator ==(MazeTile current, MazeTile other)
+		=> current.Value == other.Value;
+	public static bool operator !=(MazeTile current, MazeTile other)
+		=> !(current == other);
 
 	public static implicit operator MazeDirection(MazeTile t)
 		=> (MazeDirection)t.Value;
@@ -23,6 +31,12 @@ public struct MazeTile
 		tile.CreateOpening(d);
 		return tile;
 	}
+	#endregion
+	#region Methods Overrides
+	public override bool Equals(object obj)
+	=> base.Equals(obj);
+	public override int GetHashCode()
+		=> base.GetHashCode();
 
 	public override string ToString()
 	{
@@ -41,37 +55,37 @@ public struct MazeTile
 			case MazeDirection.East:
 				unicode = (char)0x255E;
 				break;
-			case MazeDirection.North | MazeDirection.West:
+			case MazeDirection.NorthWest:
 				unicode = (char)0x255D;
 				break;
-			case MazeDirection.North | MazeDirection.East:
+			case MazeDirection.NorthEast:
 				unicode = (char)0x255A;
 				break;
-			case MazeDirection.North | MazeDirection.South:
+			case MazeDirection.NorthSouth:
 				unicode = (char)0x2551;
 				break;
-			case MazeDirection.South | MazeDirection.West:
+			case MazeDirection.SouthWest:
 				unicode = (char)0x2557;
 				break;
-			case MazeDirection.South | MazeDirection.East:
+			case MazeDirection.SouthEast:
 				unicode = (char)0x2554;
 				break;
-			case MazeDirection.West | MazeDirection.East:
+			case MazeDirection.WestEast:
 				unicode = (char)0x2550;
 				break;
-			case MazeDirection.North | MazeDirection.West | MazeDirection.East:
+			case MazeDirection.NorthWestEast:
 				unicode = (char)0x2569;
 				break;
-			case MazeDirection.South | MazeDirection.West | MazeDirection.East:
+			case MazeDirection.SouthWestEast:
 				unicode = (char)0x2566;
 				break;
-			case MazeDirection.North | MazeDirection.South | MazeDirection.West:
+			case MazeDirection.NorthSouthWest:
 				unicode = (char)0x2563;
 				break;
-			case MazeDirection.North | MazeDirection.South | MazeDirection.East:
+			case MazeDirection.NorthSouthEast:
 				unicode = (char)0x2560;
 				break;
-			case MazeDirection.North | MazeDirection.South | MazeDirection.West | MazeDirection.East:
+			case MazeDirection.Compass:
 				unicode = (char)0x256C;
 				break;
 			default:
@@ -80,4 +94,5 @@ public struct MazeTile
 		}
 		return unicode.ToString();
 	}
+	#endregion
 }

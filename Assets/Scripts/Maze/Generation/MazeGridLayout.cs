@@ -1,94 +1,108 @@
 using System.Collections;
-using System.Text;
-using TMPro;
+using System.Linq;
 using UnityEngine;
-using UnityEngine.UI;
 
 [DisallowMultipleComponent]
 public class MazeGridLayout : MonoBehaviour
 {
-	[Header("UI Settings")]
-	public TMP_InputField _seedInput;
+	[Header("Dungeon Configuration")]
+	[SerializeField]
+	private string _seed;
 
-	public Slider _depthSlider;
-	public Slider _widthSlider;
-	public Slider _ratioSlider;
-	public Toggle _overfillToggle;
+	[SerializeField, Range(1, 50)]
+	private int _depth = 20;
+	[SerializeField, Range(1, 50)]
+	private int _width = 20;
+	[SerializeField, Range(0f, 1f)]
+	private float _fillRatio = 0.5f;
+	[SerializeField]
+	private bool _allowOverfilling = false;
 
-	public TextMeshProUGUI _display;
+	[Space(10)]
+	[SerializeField]
+	private MazeRoom[] _blueprints;
 
 	private MazeGrid _grid;
-	private bool _isGenerating = false;
+	private MazeRoom[,] _rooms;
 
-	void Awake()
+	// Temporary
+	public IsometricFollow cameraTarget;
+
+	IEnumerator Start()
 	{
-		enabled =
-			_seedInput != null &&
-			_depthSlider != null &&
-			_widthSlider != null &&
-			_ratioSlider != null &&
-			_overfillToggle != null &&
-			_display != null;
+		// Create instance of the grid
+		_grid = new MazeGrid(_seed, _depth, _width, _fillRatio, _allowOverfilling);
+		// Instantiate matrix for rooms
+		_rooms = new MazeRoom[_depth, _width];
+		// Generate the maze
+		yield return Generate();
 	}
 
-	void Start() => Generate();
-
-	public void Generate()
+	private IEnumerator Generate()
 	{
-		if (_isGenerating) return;
-		string seed = _seedInput.text;
-		if (string.IsNullOrEmpty(seed))
-			seed = RandomSeedGenerator.NewSeed();
-		StartCoroutine(BuildDungeon(seed));
-	}
+		// Generate the grid first
+		yield return BuildGrid();
+		// Generate the layout
+		yield return BuildLayout();
 
-	IEnumerator BuildDungeon(string seed)
-	{
-		if (_isGenerating) yield break;
-
-		int depth = (int)_depthSlider.value;
-		int width = (int)_widthSlider.value;
-		float fillRatio = _ratioSlider.value;
-		bool allowOverfilling = _overfillToggle.isOn;
-
-		_isGenerating = true;
-		_display.text = "Generating...";
-		_grid = new MazeGrid(seed, depth, width, fillRatio, allowOverfilling);
-		if (_grid.Tiles > 0)
+		// Temporary display all rooms
+		for (int x = 0; x < _grid.Depth; x++)
 		{
-			float startTime = Time.time;
-			IEnumerator operation = _grid.Generate();
-			while (operation.MoveNext())
+			for (int y = 0; y < _grid.Width; y++)
 			{
-				// Handle printing inside method for step-by-step
-				PrintDungeon(startTime, _grid);
-				yield return operation.Current;
+				Debug.Log($"Revealing room ({x}, {y})");
+				MazeRoom room = _rooms[x, y];
+				// Set the view on the room we're opening
+				if (cameraTarget != null)
+					cameraTarget.target = room.gameObject;
+				yield return room.RevealRoom(0.125f);
 			}
 		}
-		else
-			_display.text = "Nothing to see here.";
-		// Finished generating
-		_isGenerating = false;
 	}
 
-	private void PrintDungeon(float started, MazeGrid grid)
+	private IEnumerator BuildGrid()
 	{
-		float elapsed = Time.time - started;
-		byte minutes = (byte)Mathf.FloorToInt(elapsed / 60);
-		byte seconds = (byte)Mathf.FloorToInt(elapsed % 60);
-		StringBuilder layout = new StringBuilder();
-		layout.AppendLine($"Seed: {_grid.Seed}");
-		layout.AppendLine($"Grid is {_grid.Depth} deep and {_grid.Width} wide, with {_grid.Capacity} tiles.");
-		for (int x = 0; x < grid.Depth; x++)
+		IEnumerator builder = _grid.Generate();
+		while (builder.MoveNext())
 		{
-			layout.AppendLine();
-			for (int y = 0; y < grid.Width; y++)
-				layout.Append(_grid[x, y]);
+			// Set here the information for the load screen
+			Debug.Log($"Generating... {_grid.Tiled} out of {_grid.Tiles}");
+			yield return builder.Current;
 		}
-		if (_grid.IsGenerated)
-			layout.AppendLine($"\n\nGenerated in {Mathf.RoundToInt(elapsed)} seconds. Laid {_grid.Tiled} ({((float)_grid.Tiled / (float)_grid.Capacity).ToString("P2")}) tiles.");
-		else
-			layout.AppendLine($"\n\nGenerating... {_grid.Tiled} out of {_grid.Tiles}. Elapsed: {string.Format("{0:00}:{1:00}", minutes, seconds)}");
-		if (_display) _display.text = layout.ToString();
+	}
+
+	private IEnumerator BuildLayout()
+	{
+		for (int x = 0; x < _grid.Depth; x++)
+		{
+			for (int y = 0; y < _grid.Width; y++)
+			{
+				Debug.Log($"Spawning room in ({x},{y})");
+				// FirstOrDefault returns null when no match is found for a class
+				MazeRoom blueprint = _blueprints
+					.FirstOrDefault<MazeRoom>(room => room.Tile == _grid[x, y]);
+				// If we found a match we can place it
+				// Otherwise we throw an exception
+				if (blueprint == null) throw new System.Exception("Couldn't find a match for the blueprint.");
+				// Now we instantiate our GameObject and operate on it
+				GameObject instance = Instantiate(blueprint.gameObject, transform);
+				// We have our instance, so we're going to fetch the MazeRoom from it
+				MazeRoom room = instance.GetComponent<MazeRoom>();
+				// Set the position for the room
+				room.SetPosition(x, y);
+				// Store the reference to the room
+				_rooms[x, y] = room;
+				yield return null;
+			}
+		}
+	}
+
+	private IEnumerator BuildEvents()
+	{
+		// TODO: Place the events here
+		// Calculate the number of events to have based on the grid tile
+		// Monster is always 1, but we could increase it for higher difficulties?
+		// Portals and pits should vary, always keep them randomized but calculate the range
+		yield break;
 	}
 }

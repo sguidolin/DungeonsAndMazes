@@ -34,7 +34,7 @@ public struct MazePosition
 	public static implicit operator Vector2(MazePosition p) => new Vector2(p.x, p.y);
 	public static implicit operator MazePosition(Vector2 v) => new MazePosition((int)v.x, (int)v.y);
 
-	public Vector3 ToWorldPosition() => new Vector3(-x, 0f, -y);
+	public Vector3 ToWorldPosition(float size) => new Vector3(-x * size * 0.5f, 0f, -y * size * 0.5f);
 
 	public override string ToString() => $"({x}, {y})";
 }
