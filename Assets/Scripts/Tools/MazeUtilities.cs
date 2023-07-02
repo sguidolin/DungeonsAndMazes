@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
+using UnityEngine;
 
 public static class MazeUtilities
 {
@@ -30,10 +31,28 @@ public static class MazeUtilities
 		return to;
 	}
 
+	public static MazeDirection ToDirection(this Vector2 v)
+	{
+		MazeDirection dir = 0;
+		if (v.x > 0f)
+			dir |= MazeDirection.North;
+		if (v.x < 0f)
+			dir |= MazeDirection.South;
+		if (v.y > 0f)
+			dir |= MazeDirection.East;
+		if (v.y < 0f)
+			dir |= MazeDirection.West;
+		return dir;
+	}
+
 	// Useful for LINQ queries
 	public static IEnumerable<MazeTile> Flatten(this MazeTile[,] grid)
 	{
 		foreach (MazeTile tile in grid) yield return tile;
+	}
+	public static IEnumerable<MazeRoom> Flatten(this MazeRoom[,] grid)
+	{
+		foreach (MazeRoom room in grid) yield return room;
 	}
 
 	public static int ComputeSeed(string seed, int computations = 1)

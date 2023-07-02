@@ -22,11 +22,20 @@ public class MazeGridLayout : MonoBehaviour
 	[SerializeField]
 	private MazeRoom[] _blueprints;
 
+	[Header("Visual Effects")]
+	[SerializeField, Range(0f, 5f)]
+	private float _roomRevealTimer = 1f;
+
 	private MazeGrid _grid;
 	private MazeRoom[,] _rooms;
 
-	// Temporary
-	public IsometricFollow cameraTarget;
+	//public int Depth => _grid.Depth;
+	//public int Width => _grid.Width;
+	//public MazeRoom[,] Rooms => _rooms;
+	public bool IsGenerated { get; private set; } = false;
+
+	//// Temporary
+	//public IsometricFollow cameraTarget;
 
 	IEnumerator Start()
 	{
@@ -38,6 +47,7 @@ public class MazeGridLayout : MonoBehaviour
 		yield return Generate();
 	}
 
+	#region Procedural Generation
 	private IEnumerator Generate()
 	{
 		// Generate the grid first
@@ -45,19 +55,17 @@ public class MazeGridLayout : MonoBehaviour
 		// Generate the layout
 		yield return BuildLayout();
 
-		// Temporary display all rooms
-		for (int x = 0; x < _grid.Depth; x++)
-		{
-			for (int y = 0; y < _grid.Width; y++)
-			{
-				Debug.Log($"Revealing room ({x}, {y})");
-				MazeRoom room = _rooms[x, y];
-				// Set the view on the room we're opening
-				if (cameraTarget != null)
-					cameraTarget.target = room.gameObject;
-				yield return room.RevealRoom(0.125f);
-			}
-		}
+		//// Temporary display all rooms
+		//for (int x = 0; x < _grid.Depth; x++)
+		//{
+		//	for (int y = 0; y < _grid.Width; y++)
+		//	{
+		//		Debug.Log($"Revealing room ({x}, {y})");
+		//		MazeRoom room = _rooms[x, y];
+		//		yield return room.RevealRoom(_roomRevealTimer);
+		//	}
+		//}
+		IsGenerated = true;
 	}
 
 	private IEnumerator BuildGrid()
@@ -66,7 +74,7 @@ public class MazeGridLayout : MonoBehaviour
 		while (builder.MoveNext())
 		{
 			// Set here the information for the load screen
-			Debug.Log($"Generating... {_grid.Tiled} out of {_grid.Tiles}");
+			//Debug.Log($"Generating... {_grid.Tiled} out of {_grid.Tiles}");
 			yield return builder.Current;
 		}
 	}
@@ -77,7 +85,7 @@ public class MazeGridLayout : MonoBehaviour
 		{
 			for (int y = 0; y < _grid.Width; y++)
 			{
-				Debug.Log($"Spawning room in ({x},{y})");
+				//Debug.Log($"Spawning room in ({x},{y})");
 				// FirstOrDefault returns null when no match is found for a class
 				MazeRoom blueprint = _blueprints
 					.FirstOrDefault<MazeRoom>(room => room.Tile == _grid[x, y]);
@@ -105,4 +113,35 @@ public class MazeGridLayout : MonoBehaviour
 		// Portals and pits should vary, always keep them randomized but calculate the range
 		yield break;
 	}
+	#endregion
+
+	public bool IsMoveLegal(MazeDirection direction, MazePosition currentPosition)
+	{
+		MazeRoom currentRoom = GetRoomAt(currentPosition);
+		// We need to make sure that the current room has an opening in the direction
+		return _grid.IsMoveLegal(direction, currentPosition) && (currentRoom.Tile & direction) != 0;
+	}
+
+	public IEnumerator RevealRoom(MazePosition position)
+	{
+		MazeRoom room = _rooms[position.x, position.y];
+		yield return room.RevealRoom(_roomRevealTimer);
+	}
+
+	public MazeRoom GetFreeRoom()
+	{
+		MazeRoom result = null;
+		bool isValid = false;
+		while (!isValid)
+		{
+			result = _rooms[Random.Range(0, _grid.Depth - 1), Random.Range(0, _grid.Width - 1)];
+			isValid = result.Tile.Value > 0 && result.Event == null;
+		}
+		return result;
+	}
+
+	public MazeRoom GetRoomAt(MazePosition position)
+		=> GetRoomAt(position.x, position.y);
+	public MazeRoom GetRoomAt(int x, int y)
+		=> _rooms[x, y];
 }

@@ -72,5 +72,6 @@ public class MazeRoom : MonoBehaviour
 			// Wait for the next frame
 			yield return new WaitForEndOfFrame();
 		}
+		IsVisible = true;
 	}
 }
