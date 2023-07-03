@@ -5,6 +5,9 @@ using UnityEngine;
 
 public static class MazeUtilities
 {
+	public static BusyScope Busy(this IBusyResource resource)
+		=> new BusyScope(resource);
+
 	public static void Dig(this MazeTile[,] grid, MazePosition from, MazePosition to, MazeDirection direction)
 	{
 		// Create opening in the current room

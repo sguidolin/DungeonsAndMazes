@@ -145,4 +145,6 @@ public class MazeGrid
 	// An event must not be a tunnel, and be an actual room (not a filled block)
 	public static bool CanBeEvent(MazeRoom room)
 		=> !room.IsTunnel && room.Tile != MazeTile.Block;
+
+	public static MazeGridLayout Instance => GameManager.Instance.grid;
 }

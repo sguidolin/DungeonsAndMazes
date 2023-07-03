@@ -54,6 +54,13 @@ public class MazeRoom : MonoBehaviour
 		transform.localScale = Vector3.zero;
 	}
 
+	public void SetEvent(MazeEvent @event)
+	{
+		_event = @event;
+		// Spawn the contents of the event
+		Instantiate(@event.prefab, transform);
+	}
+
 	public IEnumerator RevealRoom(float duration)
 	{
 		// Ignore this coroutine to be safe if visible

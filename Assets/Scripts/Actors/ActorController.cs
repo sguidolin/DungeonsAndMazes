@@ -1,41 +1,52 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 [DisallowMultipleComponent]
-[RequireComponent(typeof(Animator))]
-[RequireComponent(typeof(SpriteRenderer))]
-public class ActorController : MonoBehaviour
+public class ActorController : MonoBehaviour, IBusyResource
 {
+	[SerializeField]
 	private Animator _animator;
+	[SerializeField]
 	private SpriteRenderer _renderer;
 
+	[Header("Actor Configuration")]
 	[SerializeField, Min(0.5f)]
 	private float _traverseSpeed = 5f;
+	[Header("World Position")]
+	[SerializeField, ReadOnly]
 	private bool _isMoving = false;
+	[SerializeField, ReadOnly]
 	private MazePosition _position;
 
 	[SerializeField]
-	private MazeGridLayout _layout;
+	private GameObject _compass;
+
+	private int _animatorIDDeath;
+	private int _animatorIDMoving;
+	private int _animatorIDTeleporting;
 
 	void Awake()
 	{
-		if (_layout == null)
-		{
-			enabled = false;
-			return;
-		}
-
-		_animator = GetComponent<Animator>();
-		_renderer = GetComponent<SpriteRenderer>();
+		Assert.IsFalse(_animator == null, "Animator not set!");
+		Assert.IsFalse(_renderer == null, "Renderer not set!");
+		// Read the animator IDs
+		_animatorIDDeath = Animator.StringToHash("Dead");
+		_animatorIDMoving = Animator.StringToHash("IsMoving");
+		_animatorIDTeleporting = Animator.StringToHash("IsTeleporting");
+		// Disable the compass
+		_compass?.SetActive(false);
 	}
 
 	IEnumerator Start()
 	{
+		// Disable the sprite from view
 		_renderer.enabled = false;
 		// Wait for the grid to be completely generated before spawning
-		yield return new WaitWhile(() => !_layout.IsGenerated);
+		yield return MazeGrid.Instance.IsGenerating();
 		// Find a fitting position to spawn
-		MazeRoom spawn = _layout.GetFreeRoom();
+		MazeRoom spawn = MazeGrid.Instance.GetFreeRoom();
 		// Place the player in there
 		transform.position = spawn.WorldPosition;
 		_position = spawn.Position;
@@ -44,6 +55,8 @@ public class ActorController : MonoBehaviour
 		yield return spawn.RevealRoom(0f);
 		// Enable the sprite
 		_renderer.enabled = true;
+		// Enable the compass for moving
+		_compass?.SetActive(true);
 	}
 
 	void Update()
@@ -60,7 +73,7 @@ public class ActorController : MonoBehaviour
 			if (input != Vector2.zero)
 			{
 				MazeDirection movement = input.ToDirection();
-				if (_layout.IsMoveLegal(movement, _position))
+				if (MazeGrid.Instance.IsMoveLegal(movement, _position))
 				{
 					MazePosition nextPosition = _position;
 					nextPosition.Move(movement);
@@ -74,17 +87,19 @@ public class ActorController : MonoBehaviour
 	IEnumerator Move(MazePosition from, MazePosition to)
 	{
 		if (_isMoving) yield break;
+		// Hide the compass during the animation
+		_compass?.SetActive(false);
 		// Flag the actor as moving
 		_isMoving = true;
 		// Update the grid position
 		_position = to;
 		// Get the rooms to traverse
-		MazeRoom fromRoom = _layout.GetRoomAt(from);
-		MazeRoom toRoom = _layout.GetRoomAt(to);
+		MazeRoom fromRoom = MazeGrid.Instance.GetRoomAt(from);
+		MazeRoom toRoom = MazeGrid.Instance.GetRoomAt(to);
 		// Reveal the room we're about to enter
-		yield return _layout.RevealRoom(toRoom.Position);
+		yield return MazeGrid.Instance.RevealRoom(toRoom);
 		// Begin the animation
-		_animator.SetBool("IsMoving", true);
+		SetAnimationMoving(true);
 		// Current position in curve
 		float currentPosition = 0f;
 		// Loop until we traverse to 1f
@@ -101,7 +116,44 @@ public class ActorController : MonoBehaviour
 			yield return new WaitForEndOfFrame();
 		}
 		// Flag the actor as no longer moving
-		_animator.SetBool("IsMoving", false);
+		SetAnimationMoving(false);
+		_isMoving = false;
+
+		if (MazeGrid.Instance.HasEvent(_position))
+		{
+			MazeRoom eventRoom = MazeGrid.Instance.GetRoomAt(_position);
+			yield return eventRoom.Event.OnEventTrigger(this);
+		}
+
+		// Enable the compass again
+		_compass?.SetActive(true);
+	}
+
+	public void SetPosition(MazeRoom room)
+	{
+		_position = room.Position;
+		transform.position = room.WorldPosition;
+	}
+
+	public IEnumerable<MazeDirection> GetLegalMoves()
+		=> MazeGrid.Instance.GetLegalMoves(_position);
+
+	public void SetAnimationDeath()
+		=> _animator.SetTrigger(_animatorIDDeath);
+	public void SetAnimationMoving(bool value)
+		=> _animator.SetBool(_animatorIDMoving, value);
+	public void SetAnimationTeleporting(bool value)
+		=> _animator.SetBool(_animatorIDTeleporting, value);
+
+	#region IBusyResource Implementation
+	public void OnLockApplied()
+	{
+		_isMoving = true;
+	}
+
+	public void OnLockReleased()
+	{
 		_isMoving = false;
 	}
+	#endregion
 }

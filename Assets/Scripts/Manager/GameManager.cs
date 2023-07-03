@@ -11,6 +11,8 @@ public class GameManager : MonoBehaviour
 	[WriteOnlyInEditor] public float fillRatio = 0.5f;
 	[WriteOnlyInEditor] public bool allowOverfilling = true;
 
+	public MazeGridLayout grid;
+
 	#region Singleton Instance
 	private static GameManager _instance = null;
 

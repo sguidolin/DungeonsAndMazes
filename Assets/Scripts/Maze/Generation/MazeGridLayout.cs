@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -9,11 +10,11 @@ public class MazeGridLayout : MonoBehaviour
 	[SerializeField]
 	private string _seed;
 
-	[SerializeField, Range(1, 50)]
+	[SerializeField, Range(5, 50)]
 	private int _depth = 20;
-	[SerializeField, Range(1, 50)]
+	[SerializeField, Range(5, 50)]
 	private int _width = 20;
-	[SerializeField, Range(0f, 1f)]
+	[SerializeField, Range(0.25f, 1f)]
 	private float _fillRatio = 0.5f;
 	[SerializeField]
 	private bool _allowOverfilling = false;
@@ -22,6 +23,18 @@ public class MazeGridLayout : MonoBehaviour
 	[SerializeField]
 	private MazeRoom[] _blueprints;
 
+	[Header("Events Configuration")]
+	[SerializeField]
+	private bool _buildEvents = true;
+	[SerializeField, Range(0.01f, 0.2f)]
+	private float _portalRatio = 0.05f;
+	[SerializeField, Range(0.01f, 0.2f)]
+	private float _deathPitRatio = 0.025f;
+
+	[Space(10)]
+	[SerializeField]
+	private MazeEvent[] _events;
+
 	[Header("Visual Effects")]
 	[SerializeField, Range(0f, 5f)]
 	private float _roomRevealTimer = 1f;
@@ -29,16 +42,19 @@ public class MazeGridLayout : MonoBehaviour
 	private MazeGrid _grid;
 	private MazeRoom[,] _rooms;
 
-	//public int Depth => _grid.Depth;
-	//public int Width => _grid.Width;
-	//public MazeRoom[,] Rooms => _rooms;
 	public bool IsGenerated { get; private set; } = false;
 
-	//// Temporary
-	//public IsometricFollow cameraTarget;
+	void Awake()
+	{
+		// Set the game manager instance
+		GameManager.Instance.grid = this;
+	}
 
 	IEnumerator Start()
 	{
+		// Generate a random seed if none is provided
+		if (string.IsNullOrEmpty(_seed))
+			_seed = RandomSeedGenerator.NewSeed();
 		// Create instance of the grid
 		_grid = new MazeGrid(_seed, _depth, _width, _fillRatio, _allowOverfilling);
 		// Instantiate matrix for rooms
@@ -47,6 +63,14 @@ public class MazeGridLayout : MonoBehaviour
 		yield return Generate();
 	}
 
+	void OnDestroy()
+	{
+		// Invalidate the game manager instance
+		GameManager.Instance.grid = null;
+	}
+
+	public WaitWhile IsGenerating() => new WaitWhile(() => !IsGenerated);
+
 	#region Procedural Generation
 	private IEnumerator Generate()
 	{
@@ -54,17 +78,12 @@ public class MazeGridLayout : MonoBehaviour
 		yield return BuildGrid();
 		// Generate the layout
 		yield return BuildLayout();
-
-		//// Temporary display all rooms
-		//for (int x = 0; x < _grid.Depth; x++)
-		//{
-		//	for (int y = 0; y < _grid.Width; y++)
-		//	{
-		//		Debug.Log($"Revealing room ({x}, {y})");
-		//		MazeRoom room = _rooms[x, y];
-		//		yield return room.RevealRoom(_roomRevealTimer);
-		//	}
-		//}
+		if (_buildEvents)
+		{
+			// Generate the events
+			yield return BuildEvents();
+		}
+		// Flag process as complete
 		IsGenerated = true;
 	}
 
@@ -74,7 +93,7 @@ public class MazeGridLayout : MonoBehaviour
 		while (builder.MoveNext())
 		{
 			// Set here the information for the load screen
-			//Debug.Log($"Generating... {_grid.Tiled} out of {_grid.Tiles}");
+			Debug.Log($"Generating... {_grid.Tiled} out of {_grid.Tiles}");
 			yield return builder.Current;
 		}
 	}
@@ -85,7 +104,9 @@ public class MazeGridLayout : MonoBehaviour
 		{
 			for (int y = 0; y < _grid.Width; y++)
 			{
-				//Debug.Log($"Spawning room in ({x},{y})");
+				Debug.Log($"Spawning room in ({x},{y})");
+				// Ignore non-accessible tiles
+				if (_grid[x, y] == MazeDirection.None) continue;
 				// FirstOrDefault returns null when no match is found for a class
 				MazeRoom blueprint = _blueprints
 					.FirstOrDefault<MazeRoom>(room => room.Tile == _grid[x, y]);
@@ -111,10 +132,33 @@ public class MazeGridLayout : MonoBehaviour
 		// Calculate the number of events to have based on the grid tile
 		// Monster is always 1, but we could increase it for higher difficulties?
 		// Portals and pits should vary, always keep them randomized but calculate the range
+		// Spawn one portal for debug
+		/*
+		 * Chance rounded down (1,2 = 1; 0,2 = 0) and then if less than 0 -> 1
+		 */
+		MazePortal portal = _events.OfType<MazePortal>().FirstOrDefault<MazePortal>();
+		if (portal != null)
+		{
+			MazeRoom portalRoom = GetFreeRoom();
+			Debug.Log($"Spawning portal at {portalRoom.Position}");
+			MazePortal eventInstance = Instantiate(portal);
+			portalRoom.SetEvent(eventInstance);
+		}
 		yield break;
 	}
 	#endregion
 
+	public IEnumerable<MazeDirection> GetLegalMoves(MazePosition currentPosition)
+	{
+		MazeRoom currentRoom = GetRoomAt(currentPosition);
+		// Explicit the four cardinal directions
+		MazeDirection[] cardinalDirections = new MazeDirection[]
+		{
+			MazeDirection.North, MazeDirection.South, MazeDirection.West, MazeDirection.East
+		};
+
+		return cardinalDirections.Where<MazeDirection>(dir => (dir & currentRoom.Tile) != 0);
+	}
 	public bool IsMoveLegal(MazeDirection direction, MazePosition currentPosition)
 	{
 		MazeRoom currentRoom = GetRoomAt(currentPosition);
@@ -122,10 +166,14 @@ public class MazeGridLayout : MonoBehaviour
 		return _grid.IsMoveLegal(direction, currentPosition) && (currentRoom.Tile & direction) != 0;
 	}
 
+	public IEnumerator RevealRoom(MazeRoom room)
+	{
+		yield return room.RevealRoom(_roomRevealTimer);
+	}
 	public IEnumerator RevealRoom(MazePosition position)
 	{
 		MazeRoom room = _rooms[position.x, position.y];
-		yield return room.RevealRoom(_roomRevealTimer);
+		yield return RevealRoom(room);
 	}
 
 	public MazeRoom GetFreeRoom()
@@ -135,7 +183,8 @@ public class MazeGridLayout : MonoBehaviour
 		while (!isValid)
 		{
 			result = _rooms[Random.Range(0, _grid.Depth - 1), Random.Range(0, _grid.Width - 1)];
-			isValid = result.Tile.Value > 0 && result.Event == null;
+			// Ensure that result is not null, since we're not spawning walls
+			isValid = result != null && result.Tile.Value > 0 && result.Event == null;
 		}
 		return result;
 	}
@@ -144,4 +193,7 @@ public class MazeGridLayout : MonoBehaviour
 		=> GetRoomAt(position.x, position.y);
 	public MazeRoom GetRoomAt(int x, int y)
 		=> _rooms[x, y];
+
+	public bool HasEvent(MazePosition position)
+		=> GetRoomAt(position).Event != null;
 }
