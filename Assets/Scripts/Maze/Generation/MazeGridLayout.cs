@@ -26,8 +26,12 @@ public class MazeGridLayout : MonoBehaviour
 	[Header("Events Configuration")]
 	[SerializeField]
 	private bool _buildEvents = true;
+	[SerializeField, Min(1)]
+	private int _minimumPortals = 1;
 	[SerializeField, Range(0.01f, 0.2f)]
 	private float _portalRatio = 0.05f;
+	[SerializeField, Min(1)]
+	private int _minimumDeathPits = 1;
 	[SerializeField, Range(0.01f, 0.2f)]
 	private float _deathPitRatio = 0.025f;
 
@@ -136,15 +140,34 @@ public class MazeGridLayout : MonoBehaviour
 		/*
 		 * Chance rounded down (1,2 = 1; 0,2 = 0) and then if less than 0 -> 1
 		 */
-		MazePortal portal = _events.OfType<MazePortal>().FirstOrDefault<MazePortal>();
-		if (portal != null)
+		int maxNumberOfPortals = Mathf.RoundToInt(_grid.Tiles * _portalRatio);
+		if (maxNumberOfPortals < _minimumPortals) maxNumberOfPortals = _minimumPortals;
+		for (int i = 0; i < Random.Range(_minimumPortals, maxNumberOfPortals); i++)
 		{
-			MazeRoom portalRoom = GetFreeRoom();
-			Debug.Log($"Spawning portal at {portalRoom.Position}");
-			MazePortal eventInstance = Instantiate(portal);
-			portalRoom.SetEvent(eventInstance);
+			// Fetch any portal define
+			MazePortal[] portals =
+				_events.OfType<MazePortal>()
+				.ToArray<MazePortal>();
+			if (portals.Any<MazePortal>())
+			{
+				// If we found some, get a random one
+				MazePortal portal = portals[Random.Range(0, portals.Length)];
+				// Get the first available room for it
+				MazeRoom portalRoom = GetFreeRoom();
+				Debug.Log($"Spawning portal at {portalRoom.Position}");
+				portalRoom.SetEvent(Instantiate(portal));
+			}
 		}
-		yield break;
+		//MazePortal portal = _events.OfType<MazePortal>().FirstOrDefault<MazePortal>();
+		//if (portal != null)
+		//{
+		//	MazeRoom portalRoom = GetFreeRoom();
+		//	Debug.Log($"Spawning portal at {portalRoom.Position}");
+		//	MazePortal eventInstance = Instantiate(portal);
+		//	portalRoom.SetEvent(eventInstance);
+		//}
+		//yield break;
+		yield return null;
 	}
 	#endregion
 
