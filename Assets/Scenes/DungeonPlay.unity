@@ -2134,10 +2134,13 @@ MonoBehaviour:
   - {fileID: 7010825947202548688, guid: e0a03b460ddf4124ba7e2a1627ea3233, type: 3}
   - {fileID: 7010825947202548688, guid: 9f5716dc651ef20498af7bc286d16002, type: 3}
   _buildEvents: 1
+  _minimumPortals: 1
   _portalRatio: 0.05
+  _minimumDeathPits: 1
   _deathPitRatio: 0.025
   _events:
-  - {fileID: 11400000, guid: 01458e9754b4f3f47a8318898dd035de, type: 2}
+  - {fileID: 11400000, guid: 345c420a32c3f1048b2eca4baf7de899, type: 2}
+  - {fileID: 11400000, guid: e283c4d295de2f740a3148a6d900bc85, type: 2}
   _roomRevealTimer: 0.5
 --- !u!4 &419063325
 Transform:
@@ -11146,7 +11149,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1901384591}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0.99, y: 0, z: 0}
   m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_ConstrainProportionsScale: 0
   m_Children:

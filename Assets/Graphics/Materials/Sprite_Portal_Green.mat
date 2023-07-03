@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Sprite_Portal
+  m_Name: Sprite_Portal_Green
   m_Shader: {fileID: -6465566751694194690, guid: 06bb52ba0233c4c40ae981932e375ac2,
     type: 3}
   m_ValidKeywords: []
@@ -48,5 +48,5 @@ Material:
     - _Speed: 0.125
     - _Strength: 16
     m_Colors:
-    - _Color: {r: 181.01933, g: 21.296392, b: 10.648196, a: 1}
+    - _Color: {r: 24.189838, g: 184.81036, b: 9.477455, a: 1}
   m_BuildTextureStacks: []

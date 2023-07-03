@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1fef92f211a96b94fbc0d6e58a030dc2, type: 3}
-  m_Name: ev_Portal
+  m_Name: ev_Portal_Red
   m_EditorClassIdentifier: 
   prefab: {fileID: 4365704097229494022, guid: db8dcecedd7a7324bba6d8faa9e15d54, type: 3}
   exitPoint:

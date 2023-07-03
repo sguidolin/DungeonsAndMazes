@@ -11,6 +11,7 @@ public class ActorController : MonoBehaviour, IBusyResource
 	[SerializeField]
 	private SpriteRenderer _renderer;
 
+	private bool _isAlive;
 	[Header("Actor Configuration")]
 	[SerializeField, Min(0.5f)]
 	private float _traverseSpeed = 5f;
@@ -23,6 +24,7 @@ public class ActorController : MonoBehaviour, IBusyResource
 	[SerializeField]
 	private GameObject _compass;
 
+	private int _animatorIDFall;
 	private int _animatorIDDeath;
 	private int _animatorIDMoving;
 	private int _animatorIDTeleporting;
@@ -32,6 +34,7 @@ public class ActorController : MonoBehaviour, IBusyResource
 		Assert.IsFalse(_animator == null, "Animator not set!");
 		Assert.IsFalse(_renderer == null, "Renderer not set!");
 		// Read the animator IDs
+		_animatorIDFall = Animator.StringToHash("Fall");
 		_animatorIDDeath = Animator.StringToHash("Dead");
 		_animatorIDMoving = Animator.StringToHash("IsMoving");
 		_animatorIDTeleporting = Animator.StringToHash("IsTeleporting");
@@ -57,10 +60,14 @@ public class ActorController : MonoBehaviour, IBusyResource
 		_renderer.enabled = true;
 		// Enable the compass for moving
 		_compass?.SetActive(true);
+		_isAlive = true;
 	}
 
 	void Update()
 	{
+		// Don't update if actor is dead
+		if (!_isAlive) return;
+
 		if (!_isMoving)
 		{
 			Vector2 input = Vector2.zero;
@@ -72,12 +79,14 @@ public class ActorController : MonoBehaviour, IBusyResource
 				input.y = 1f * Mathf.Sign(Input.GetAxis("Horizontal"));
 			if (input != Vector2.zero)
 			{
+				// Convert input into a cardinal direction
 				MazeDirection movement = input.ToDirection();
 				if (MazeGrid.Instance.IsMoveLegal(movement, _position))
 				{
+					// Calculate next position
 					MazePosition nextPosition = _position;
 					nextPosition.Move(movement);
-
+					// Start the movement routine
 					StartCoroutine(Move(_position, nextPosition));
 				}
 			}
@@ -117,16 +126,21 @@ public class ActorController : MonoBehaviour, IBusyResource
 		}
 		// Flag the actor as no longer moving
 		SetAnimationMoving(false);
-		_isMoving = false;
-
+		// Evaluate current room for events
 		if (MazeGrid.Instance.HasEvent(_position))
 		{
+			// If there's an event then trigger it
 			MazeRoom eventRoom = MazeGrid.Instance.GetRoomAt(_position);
 			yield return eventRoom.Event.OnEventTrigger(this);
 		}
-
-		// Enable the compass again
-		_compass?.SetActive(true);
+		// Free up operations for the controller
+		_isMoving = false;
+		// Enable whatever else if the actor is still alive
+		if (_isAlive)
+		{
+			// Enable the compass again
+			_compass?.SetActive(true);
+		}
 	}
 
 	public void SetPosition(MazeRoom room)
@@ -138,12 +152,17 @@ public class ActorController : MonoBehaviour, IBusyResource
 	public IEnumerable<MazeDirection> GetLegalMoves()
 		=> MazeGrid.Instance.GetLegalMoves(_position);
 
+	public void SetAnimationFall()
+		=> _animator.SetTrigger(_animatorIDFall);
 	public void SetAnimationDeath()
 		=> _animator.SetTrigger(_animatorIDDeath);
 	public void SetAnimationMoving(bool value)
 		=> _animator.SetBool(_animatorIDMoving, value);
 	public void SetAnimationTeleporting(bool value)
 		=> _animator.SetBool(_animatorIDTeleporting, value);
+
+	public void FlagAsDead()
+		=> _isAlive = false;
 
 	#region IBusyResource Implementation
 	public void OnLockApplied()

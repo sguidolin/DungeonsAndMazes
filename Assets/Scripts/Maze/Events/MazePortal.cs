@@ -9,20 +9,17 @@ public class MazePortal : MazeEvent
 
 	public override IEnumerator OnEventTrigger(ActorController caller)
 	{
-		using (caller.Busy())
-		{
-			// Begin teleport animation
-			caller.SetAnimationTeleporting(true);
-			MazeRoom target = MazeGrid.Instance.GetFreeRoom();
-			// Wait for the specified travel time
-			yield return new WaitForSeconds(travelTime);
-			// Make the room pop in
-			yield return target.RevealRoom(0f);
-			// Instantly move the actor
-			caller.SetPosition(target);
-			// End teleport animation
-			caller.SetAnimationTeleporting(false);
-			yield return new WaitForEndOfFrame();
-		}
+		// Begin teleport animation
+		caller.SetAnimationTeleporting(true);
+		MazeRoom target = MazeGrid.Instance.GetFreeRoom();
+		// Wait for the specified travel time
+		yield return new WaitForSeconds(travelTime);
+		// Make the room pop in
+		yield return target.RevealRoom(0f);
+		// Instantly move the actor
+		caller.SetPosition(target);
+		// End teleport animation
+		caller.SetAnimationTeleporting(false);
+		yield return new WaitForEndOfFrame();
 	}
 }

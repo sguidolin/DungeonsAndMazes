@@ -132,41 +132,23 @@ public class MazeGridLayout : MonoBehaviour
 
 	private IEnumerator BuildEvents()
 	{
-		// TODO: Place the events here
-		// Calculate the number of events to have based on the grid tile
-		// Monster is always 1, but we could increase it for higher difficulties?
-		// Portals and pits should vary, always keep them randomized but calculate the range
-		// Spawn one portal for debug
-		/*
-		 * Chance rounded down (1,2 = 1; 0,2 = 0) and then if less than 0 -> 1
-		 */
-		int maxNumberOfPortals = Mathf.RoundToInt(_grid.Tiles * _portalRatio);
-		if (maxNumberOfPortals < _minimumPortals) maxNumberOfPortals = _minimumPortals;
-		for (int i = 0; i < Random.Range(_minimumPortals, maxNumberOfPortals); i++)
-		{
-			// Fetch any portal define
-			MazePortal[] portals =
-				_events.OfType<MazePortal>()
-				.ToArray<MazePortal>();
-			if (portals.Any<MazePortal>())
-			{
-				// If we found some, get a random one
-				MazePortal portal = portals[Random.Range(0, portals.Length)];
-				// Get the first available room for it
-				MazeRoom portalRoom = GetFreeRoom();
-				Debug.Log($"Spawning portal at {portalRoom.Position}");
-				portalRoom.SetEvent(Instantiate(portal));
-			}
-		}
-		//MazePortal portal = _events.OfType<MazePortal>().FirstOrDefault<MazePortal>();
-		//if (portal != null)
-		//{
-		//	MazeRoom portalRoom = GetFreeRoom();
-		//	Debug.Log($"Spawning portal at {portalRoom.Position}");
-		//	MazePortal eventInstance = Instantiate(portal);
-		//	portalRoom.SetEvent(eventInstance);
-		//}
-		//yield break;
+		// TODO: Spawn Monster
+
+		// Spawning Death Pits
+		MazeEvent.Spawn<MazeDeathPit>(
+			_events,
+			_minimumDeathPits,
+			Mathf.RoundToInt(_grid.Tiles * _deathPitRatio),
+			this
+		);
+		// Spawning Portals
+		MazeEvent.Spawn<MazePortal>(
+			_events,
+			_minimumPortals,
+			Mathf.RoundToInt(_grid.Tiles * _portalRatio),
+			this
+		);
+		// All events were spawned now
 		yield return null;
 	}
 	#endregion
@@ -179,7 +161,7 @@ public class MazeGridLayout : MonoBehaviour
 		{
 			MazeDirection.North, MazeDirection.South, MazeDirection.West, MazeDirection.East
 		};
-
+		// Return the directions that match the room exits
 		return cardinalDirections.Where<MazeDirection>(dir => (dir & currentRoom.Tile) != 0);
 	}
 	public bool IsMoveLegal(MazeDirection direction, MazePosition currentPosition)
@@ -219,4 +201,17 @@ public class MazeGridLayout : MonoBehaviour
 
 	public bool HasEvent(MazePosition position)
 		=> GetRoomAt(position).Event != null;
+
+#if UNITY_EDITOR
+	[ContextMenu("Reveal the entire maze")]
+	public void RevealMaze()
+	{
+		if (IsGenerated)
+		{
+			// Display all rooms for debug purposes
+			foreach (MazeRoom room in _rooms.Flatten().Where<MazeRoom>(r => r != null))
+				StartCoroutine(room.RevealRoom(0f));
+		}
+	}
+#endif
 }
