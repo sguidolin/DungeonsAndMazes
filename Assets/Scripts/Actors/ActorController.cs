@@ -29,6 +29,12 @@ public class ActorController : MonoBehaviour, IBusyResource
 	private int _animatorIDMoving;
 	private int _animatorIDTeleporting;
 
+	public bool IsMoving => _isMoving;
+	public float Speed => _traverseSpeed;
+	public MazePosition Position => _position;
+
+	public bool IsBusy { get; private set; } = false;
+
 	void Awake()
 	{
 		Assert.IsFalse(_animator == null, "Animator not set!");
@@ -81,14 +87,18 @@ public class ActorController : MonoBehaviour, IBusyResource
 			{
 				// Convert input into a cardinal direction
 				MazeDirection movement = input.ToDirection();
-				if (MazeGrid.Instance.IsMoveLegal(movement, _position))
-				{
-					// Calculate next position
-					MazePosition nextPosition = _position;
-					nextPosition.Move(movement);
-					// Start the movement routine
-					StartCoroutine(Move(_position, nextPosition));
-				}
+				//if (MazeGrid.Instance.IsMoveLegal(movement, _position))
+				//{
+				//	// Calculate next position
+				//	MazePosition nextPosition = _position;
+				//	nextPosition.Move(movement);
+				//	// Start the movement routine
+				//	StartCoroutine(Move(_position, nextPosition));
+				//}
+				// Calculate our navigation path
+				MazeNavigationPath path = MazeNavigation.Calculate(_position, movement);
+				// Then traverse through the result
+				StartCoroutine(MazeNavigation.Navigate(this, path));
 			}
 		}
 	}
@@ -143,7 +153,9 @@ public class ActorController : MonoBehaviour, IBusyResource
 		}
 	}
 
-	public void SetPosition(MazeRoom room)
+	public void SetPosition(MazePosition position)
+		=> _position = position;
+	public void SetPositionAndMove(MazeRoom room)
 	{
 		_position = room.Position;
 		transform.position = room.WorldPosition;
@@ -167,12 +179,28 @@ public class ActorController : MonoBehaviour, IBusyResource
 	#region IBusyResource Implementation
 	public void OnLockApplied()
 	{
+		// Apply the lock
+		IsBusy = true;
+
+		// Hide the compass while locked
+		_compass?.SetActive(false);
+		// Flag the actor as moving
 		_isMoving = true;
 	}
 
 	public void OnLockReleased()
 	{
+		// Free up the actor on release
 		_isMoving = false;
+		// Enable whatever else if the actor is still alive
+		if (_isAlive)
+		{
+			// First thing is the compass
+			_compass?.SetActive(true);
+		}
+
+		// Release the lock
+		IsBusy = false;
 	}
 	#endregion
 }

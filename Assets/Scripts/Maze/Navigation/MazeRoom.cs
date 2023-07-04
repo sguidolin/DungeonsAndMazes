@@ -11,26 +11,16 @@ public class MazeRoom : MonoBehaviour
 	[SerializeField]
 	private MazeTile _tile;
 	private MazeEvent _event;
-	/*
-	 * FogController might be scrapped
-	 * New logic would be as follow:
-	 * - Environmental fog always present
-	 * - Rooms that have yet to be visited are shrinked to a scale of (0,0,0)
-	 * - Once a room is about to be visited, we release the "fog" and grow them back to (1,1,1)
-	 */
-	//[SerializeField]
-	//private FogController _fog;
 	[SerializeField]
 	private bool _isTunnel = false;
+	[SerializeField, Tooltip("Points that make up a tunnel")]
+	private MazeConnection[] _paths;
 
 	[Header("World Data")]
 	[SerializeField]
 	private MazePosition _position;
 	[SerializeField]
 	private Vector3 _worldPosition;
-	// TODO: Still evaluating how much data I would need if I were to calculate a Bezier
-	[SerializeField]
-	private MazeConnection[] _paths;
 
 	public MazeTile Tile => _tile;
 	public MazeEvent Event => _event;
@@ -38,6 +28,9 @@ public class MazeRoom : MonoBehaviour
 
 	public MazePosition Position => _position;
 	public Vector3 WorldPosition => _worldPosition;
+	// Return an empty array if this isn't a tunnel
+	public MazeConnection[] Connections
+		=> _isTunnel ? _paths : new MazeConnection[0];
 
 	public bool IsVisible { get; private set; } = false;
 

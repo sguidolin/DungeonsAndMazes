@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using UnityEngine;
@@ -48,6 +49,34 @@ public static class MazeUtilities
 		return dir;
 	}
 
+	private static MazeRoom GetRandom(this MazeRoom[] collection, bool takeTunnels, System.Func<MazeRoom, bool> predicate)
+	{
+		// Filter out tunnels from this function
+		IEnumerable<MazeRoom> filtered = collection
+			.Where<MazeRoom>(room => room.IsTunnel == takeTunnels)
+			.Where<MazeRoom>(predicate);
+		if (filtered.Any<MazeRoom>())
+		{
+			// Get a random index
+			int indexOfRandom = Random.Range(0, filtered.Count<MazeRoom>());
+			// In order to have that we take n+1 elements from the collection
+			// Then return the last one
+			return filtered
+				.Take<MazeRoom>(indexOfRandom + 1)
+				.LastOrDefault<MazeRoom>();
+		}
+		return null;
+	}
+	public static MazeRoom GetRandomTile(this MazeRoom[] collection, System.Func<MazeRoom, bool> predicate)
+		=> collection.GetRandom(false, predicate);
+	public static MazeRoom GetRandomTunnel(this MazeRoom[] collection, System.Func<MazeRoom, bool> predicate)
+		=> collection.GetRandom(true, predicate);
+
+	public static void AddUnique<T>(this List<T> list, T item)
+	{
+		if (!list.Contains(item)) list.Add(item);
+	}
+
 	// Useful for LINQ queries
 	public static IEnumerable<MazeTile> Flatten(this MazeTile[,] grid)
 	{
@@ -58,6 +87,7 @@ public static class MazeUtilities
 		foreach (MazeRoom room in grid) yield return room;
 	}
 
+	#region Cryptography
 	public static int ComputeSeed(string seed, int computations = 1)
 	{
 		// Try converting string to int
@@ -76,4 +106,5 @@ public static class MazeUtilities
 		}
 		return hash;
 	}
+	#endregion
 }

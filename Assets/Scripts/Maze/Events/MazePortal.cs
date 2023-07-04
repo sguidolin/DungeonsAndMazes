@@ -17,7 +17,7 @@ public class MazePortal : MazeEvent
 		// Make the room pop in
 		yield return target.RevealRoom(0f);
 		// Instantly move the actor
-		caller.SetPosition(target);
+		caller.SetPositionAndMove(target);
 		// End teleport animation
 		caller.SetAnimationTeleporting(false);
 		yield return new WaitForEndOfFrame();

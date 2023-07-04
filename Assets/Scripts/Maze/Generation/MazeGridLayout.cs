@@ -18,6 +18,10 @@ public class MazeGridLayout : MonoBehaviour
 	private float _fillRatio = 0.5f;
 	[SerializeField]
 	private bool _allowOverfilling = false;
+	[SerializeField, Range(0f, 1f)]
+	private float _tunnelChance = 0.25f;
+	[SerializeField]
+	private bool _allowTunnels = true;
 
 	[Space(10)]
 	[SerializeField]
@@ -112,8 +116,21 @@ public class MazeGridLayout : MonoBehaviour
 				// Ignore non-accessible tiles
 				if (_grid[x, y] == MazeDirection.None) continue;
 				// FirstOrDefault returns null when no match is found for a class
-				MazeRoom blueprint = _blueprints
-					.FirstOrDefault<MazeRoom>(room => room.Tile == _grid[x, y]);
+				MazeRoom blueprint = _blueprints.GetRandomTile(room => room.Tile == _grid[x, y]);
+				// Now we need to check if we could place a tunnel here
+				if (_allowTunnels)
+				{
+					float tunnelChance = _tunnelChance;
+					// If it's a 4-way room I want the chance to be halved
+					if (blueprint.Tile == MazeDirection.Compass)
+						tunnelChance *= 0.5f;
+					// Check if the blueprint can be a tunnel, and we hit the random chance
+					if (MazeGrid.CanBeTunnel(blueprint) && tunnelChance >= Random.value)
+					{
+						// This time we look for tunnel
+						blueprint = _blueprints.GetRandomTunnel(room => room.Tile == _grid[x, y]);
+					}
+				}
 				// If we found a match we can place it
 				// Otherwise we throw an exception
 				if (blueprint == null) throw new System.Exception("Couldn't find a match for the blueprint.");
@@ -189,7 +206,9 @@ public class MazeGridLayout : MonoBehaviour
 		{
 			result = _rooms[Random.Range(0, _grid.Depth - 1), Random.Range(0, _grid.Width - 1)];
 			// Ensure that result is not null, since we're not spawning walls
-			isValid = result != null && result.Tile.Value > 0 && result.Event == null;
+			// Rule is: room not empty (0), no events, not a tunnel
+			// Those are special rooms that are not considered available
+			isValid = result != null && result.Tile.Value > 0 && result.Event == null && !result.IsTunnel;
 		}
 		return result;
 	}
