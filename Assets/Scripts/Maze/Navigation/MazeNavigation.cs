@@ -88,7 +88,7 @@ public static class MazeNavigation
 			foreach (MazeRoom room in path.rooms)
 				yield return MazeGrid.Instance.RevealRoom(room);
 			// Begin the animation
-			actor.SetAnimationMoving(true);
+			actor.SetAnimatorFlag("IsMoving", true);
 			// Iterate through the points along the path
 			for (int step = 1; step < path.locations.Length; step++)
 			{
@@ -112,7 +112,7 @@ public static class MazeNavigation
 				}
 			}
 			// Flag the actor as no longer moving
-			actor.SetAnimationMoving(false);
+			actor.SetAnimatorFlag("IsMoving", false);
 			// Evaluate the room we find ourselves in for events
 			if (MazeGrid.Instance.HasEvent(actor.Position))
 			{
@@ -122,6 +122,12 @@ public static class MazeNavigation
 				yield return eventRoom.Event.OnEventTrigger(actor);
 			}
 			// Exiting from the scope will free up the actor automatically
+			foreach (MazeEvent @event in MazeGrid.Instance.GetEventsInProximity(actor.Position))
+			{
+				// TODO: Enable some UI?
+				// This should be done when the turn starts
+				Debug.Log($"Event detected in proximity: {@event.GetType()}");
+			}
 		}
 	}
 }

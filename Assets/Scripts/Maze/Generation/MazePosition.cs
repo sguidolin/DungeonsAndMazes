@@ -31,6 +31,14 @@ public struct MazePosition
 		}
 	}
 
+	public static MazePosition Move(MazePosition currentPosition, MazeDirection direction)
+	{
+		MazePosition nextPosition = currentPosition;
+		if (MazeGrid.Instance.IsMoveLegal(direction, nextPosition))
+			nextPosition.Move(direction);
+		return nextPosition;
+	}
+
 	public static implicit operator Vector2(MazePosition p) => new Vector2(p.x, p.y);
 	public static implicit operator MazePosition(Vector2 v) => new MazePosition((int)v.x, (int)v.y);
 

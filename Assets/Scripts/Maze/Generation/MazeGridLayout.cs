@@ -220,6 +220,17 @@ public class MazeGridLayout : MonoBehaviour
 
 	public bool HasEvent(MazePosition position)
 		=> GetRoomAt(position).Event != null;
+	public bool HasEvent(MazeRoom room)
+		=> room.Event != null;
+
+	public IEnumerable<MazeEvent> GetEventsInProximity(MazePosition position)
+	{
+		foreach (MazeDirection allowed in GetLegalMoves(position))
+		{
+			MazeRoom room = GetRoomAt(MazePosition.Move(position, allowed));
+			if (HasEvent(room)) yield return room.Event;
+		}
+	}
 
 #if UNITY_EDITOR
 	[ContextMenu("Reveal the entire maze")]

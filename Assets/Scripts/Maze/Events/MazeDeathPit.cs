@@ -7,7 +7,7 @@ public class MazeDeathPit : MazeEvent
 	public override IEnumerator OnEventTrigger(ActorController caller)
 	{
 		// Begin fall animation
-		caller.SetAnimationFall();
+		caller.SetAnimatorTrigger("Fall");
 		// Flag the actor as dead
 		caller.FlagAsDead();
 		// TODO: Trigger game over

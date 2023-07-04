@@ -10,7 +10,7 @@ public class MazePortal : MazeEvent
 	public override IEnumerator OnEventTrigger(ActorController caller)
 	{
 		// Begin teleport animation
-		caller.SetAnimationTeleporting(true);
+		caller.SetAnimatorFlag("IsTeleporting", true);
 		MazeRoom target = MazeGrid.Instance.GetFreeRoom();
 		// Wait for the specified travel time
 		yield return new WaitForSeconds(travelTime);
@@ -19,7 +19,7 @@ public class MazePortal : MazeEvent
 		// Instantly move the actor
 		caller.SetPositionAndMove(target);
 		// End teleport animation
-		caller.SetAnimationTeleporting(false);
+		caller.SetAnimatorFlag("IsTeleporting", false);
 		yield return new WaitForEndOfFrame();
 	}
 }
