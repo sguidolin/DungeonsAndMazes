@@ -5,7 +5,7 @@ using UnityEngine;
 public class MazeWorker
 {
 	private const float BIAS_FACTOR = 0.215f;
-	private const float INDECISIVENESS_FACTOR = 0.45f;
+	private const float ADVENTUROUS_FACTOR = 1.55f;
 	private const float SECOND_WIND_CHANCE = 0.25f;
 
 	private readonly MazeDirection[] WORK_CHOICES = new MazeDirection[]
@@ -19,24 +19,22 @@ public class MazeWorker
 	// Random factors
 	private float _bias;
 	private float _indecisiveness;
+	private float _adventurous;
 
-	private bool _smartDigging = false;
 	private List<MazeDirection> _choices;
 
 	public int Lifespan => _lifespan;
 	public bool Retired => !(_lifespan > 0);
 	public MazePosition Position => _position;
 
-	public MazeWorker(bool useSmartDigging, int lifespan, MazePosition deployment)
+	public MazeWorker(int lifespan, MazePosition deployment)
 	{
-		_smartDigging = useSmartDigging;
-
 		_lifespan = lifespan;
 		_position = deployment;
-		// How indecisive is our worker?
-		_indecisiveness = Random.value * INDECISIVENESS_FACTOR;
 		// What's the chance for bias of our worker?
 		_bias = Random.value * BIAS_FACTOR;
+		// Is our worker seeking to build new tunnels?
+		_adventurous = (Random.value * ADVENTUROUS_FACTOR) + 0.025f;
 		// Initialize the choices the worker can make
 		_choices = new List<MazeDirection>(WORK_CHOICES);
 		// Bias is the chance that our worker will dislike a random direction
@@ -83,17 +81,13 @@ public class MazeWorker
 			// Make sure the worker has legal choices to make
 			if (HasLegalMoves(possibleChoices, minDepth, maxDepth, minWidth, maxWidth))
 			{
-				// Let the worker take longer if they're too indecisive
-				while (Random.value < _indecisiveness)
-					direction = possibleChoices[Random.Range(0, possibleChoices.Count)];
-				// Working is mandatory
-				if (direction == 0)
-					continue;
+				// Let the worker pick a direction
+				direction = possibleChoices[Random.Range(0, possibleChoices.Count)];
 				// Check validity of the move we picked
 				isMoveValid = IsLegalMove(direction, minDepth, maxDepth, minWidth, maxWidth);
 				// If we can move, we need to evaluate if we actually want to go through
 				// This is based on the number of holes that have been dug already in the next cell
-				if (isMoveValid && _smartDigging)
+				if (isMoveValid)
 				{
 					// Get the next position
 					MazePosition nextPosition = _position;
@@ -105,7 +99,7 @@ public class MazeWorker
 					// If it's 0 or all we go through
 					if (holes == 0 || holes == MazeTile.Cardinals.Length) continue;
 					// Calculate the chance to advance
-					float advanceChance = 1f / (holes * 1.25f);
+					float advanceChance = 1f / (holes * _adventurous);
 					// If we meet the chance then we continue
 					if (Random.value < advanceChance)
 						continue;

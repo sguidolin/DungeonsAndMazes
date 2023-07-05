@@ -11,6 +11,7 @@ public enum MazeNavigationMode : byte
 
 public static class MazeNavigation
 {
+	#region Actor Navigation
 	private const float ROTATION_HARDNESS = 0.025f;
 
 	public static MazeNavigationPath Calculate(MazePosition startPosition, MazeDirection direction)
@@ -153,5 +154,113 @@ public static class MazeNavigation
 				Debug.Log($"Event detected in proximity: {@event.GetType()}");
 			}
 		}
+	}
+	#endregion
+
+	public static MazeNavigationTile EnsureNavigation(MazeTile[,] map, MazePosition start, MazePosition end)
+	{
+		// If we're in an empty tile then we can't move
+		if (map.GetTileAt(start).Value == 0) return null;
+		// Create the starting tile for our navigation
+		MazeNavigationTile startingTile = new MazeNavigationTile
+		{
+			position = start
+		};
+		// Create the ending tile for our navigation
+		MazeNavigationTile endingTile = new MazeNavigationTile
+		{
+			position = end
+		};
+		// Instantiate the list of active tiles to check
+		List<MazeNavigationTile> activeTiles = new List<MazeNavigationTile>();
+		// The first one is the start
+		activeTiles.Add(startingTile);
+		// Instantiate a list to keep track of the visited tiles
+		List<MazeNavigationTile> visitedTiles = new List<MazeNavigationTile>();
+
+		while (activeTiles.Any<MazeNavigationTile>())
+		{
+			// Get the cheapest tile
+			MazeNavigationTile checkTile = activeTiles
+				.OrderBy<MazeNavigationTile, int>(tile => tile.Weight)
+				.First<MazeNavigationTile>();
+
+			if (checkTile.position == endingTile.position)
+			{
+				// We found the destination
+				return checkTile;
+			}
+
+			// Move the tile from active to visited
+			visitedTiles.Add(checkTile);
+			activeTiles.Remove(checkTile);
+
+			// Get the tiles that we can reach from here
+			IEnumerable<MazeNavigationTile> walkableTiles = GetReachableTiles(map, checkTile, endingTile);
+			// Iterate through each one to check if it's an active tile
+			foreach (MazeNavigationTile walkableTile in walkableTiles)
+			{
+				// We have already visited this tile, so we don't care about it
+				if (visitedTiles.Any<MazeNavigationTile>(tile => tile.position == walkableTile.position))
+					continue;
+				// If it's already in the active list, but has a better cost, then we can evaluate it
+				if (activeTiles.Any<MazeNavigationTile>(tile => tile.position == walkableTile.position))
+				{
+					MazeNavigationTile existingTile = activeTiles
+						.First<MazeNavigationTile>(tile => tile.position == walkableTile.position);
+					if (existingTile.Weight > checkTile.Weight)
+					{
+						activeTiles.Remove(existingTile);
+						activeTiles.Add(walkableTile);
+					}
+				}
+				else
+				{
+					// We've never been here, so add it to the list
+					activeTiles.Add(walkableTile);
+				}
+			}
+		}
+		// If we couldn't find a path, we return null
+		return null;
+	}
+
+	private static IEnumerable<MazeNavigationTile> GetReachableTiles(MazeTile[,] map, MazeNavigationTile current, MazeNavigationTile target)
+	{
+		List<MazeNavigationTile> possibleTiles = new List<MazeNavigationTile>();
+		// Iterate through every direction we can move
+		foreach (MazeDirection direction in MazeTile.Cardinals)
+		{
+			// We check to make sure the move is legal
+			if (map.IsMoveLegal(direction, current.position))
+			{
+				MazePosition possiblePosition = current.position;
+				MazeTile tile = map.GetTileAt(possiblePosition);
+				// Move in the direction to add the new tile
+				possiblePosition.Move(direction);
+				// If the tile is empty we discard it
+				if (tile.Value == 0)
+					continue;
+				// If we have a parent we already went through an iteration
+				// So if we try to move towards our parent -- don't
+				if (current.parent != null && current.parent.position == possiblePosition)
+					continue;
+				// We need to also check if we can move in that direction
+				if (tile.Entrances.Contains(direction))
+				{
+					// Add the tile to the possibilities
+					possibleTiles.Add(new MazeNavigationTile
+					{
+						position = possiblePosition,
+						cost = current.cost + 1,
+						parent = current,
+					});
+				}
+			}
+		}
+		// Calculate the distance for each tile
+		possibleTiles.ForEach(tile => tile.SetDistance(target.position));
+		// Return whatever we found
+		return possibleTiles;
 	}
 }

@@ -16,7 +16,7 @@ public class HeroController : ActorController
 		// Wait for the grid to be completely generated before spawning
 		yield return MazeGrid.Instance.IsGenerating();
 		// Find a fitting position to spawn
-		MazeRoom spawn = MazeGrid.Instance.GetFreeRoom();
+		MazeRoom spawn = MazeGrid.Instance.GetSpawnRoom();
 		// Place the player in there
 		transform.position = spawn.WorldPosition;
 		_position = spawn.Position;

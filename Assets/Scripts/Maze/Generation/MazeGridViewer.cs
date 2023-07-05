@@ -7,8 +7,6 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public class MazeGridViewer : MonoBehaviour
 {
-	public bool useSmartDigging = false;
-
 	[Header("UI Settings")]
 	public TMP_InputField _seedInput;
 
@@ -56,9 +54,7 @@ public class MazeGridViewer : MonoBehaviour
 		_isGenerating = true;
 		_display.text = "Generating...";
 
-		_grid = new MazeGrid(seed,
-			depth, width, fillRatio,
-			allowOverfilling, useSmartDigging);
+		_grid = new MazeGrid(seed, depth, width, fillRatio, allowOverfilling);
 		if (_grid.Tiles > 0)
 		{
 			float startTime = Time.time;
@@ -69,6 +65,8 @@ public class MazeGridViewer : MonoBehaviour
 				PrintDungeon(startTime, _grid);
 				yield return operation.Current;
 			}
+			// Once we're done, do one last print
+			PrintDungeon(startTime, _grid);
 		}
 		else
 			_display.text = "Nothing to see here.";
@@ -88,7 +86,23 @@ public class MazeGridViewer : MonoBehaviour
 		{
 			layout.AppendLine();
 			for (int y = 0; y < grid.Width; y++)
-				layout.Append(_grid[x, y]);
+			{
+				string colorFormat = "{0}";
+				if (_grid.Spawn == new MazePosition(x, y))
+					colorFormat = "<color=blue>{0}</color>";
+				else
+				{
+					// If the grid is generated and we reach the spawn then change the color
+					if (_grid.IsGenerated && _grid[x, y].Value != 0)
+					{
+						if (MazeNavigation.EnsureNavigation(_grid.Grid, new MazePosition(x, y), _grid.Spawn) != null)
+							colorFormat = "<color=green>{0}</color>";
+						else
+							colorFormat = "<color=red>{0}</color>";
+					}
+				}
+				layout.AppendFormat(colorFormat, _grid[x, y]);
+			}
 		}
 		if (_grid.IsGenerated)
 			layout.AppendLine($"\n\nGenerated in {Mathf.RoundToInt(elapsed)} seconds. Laid {_grid.Tiled} ({((float)_grid.Tiled / (float)_grid.Capacity).ToString("P2")}) tiles.");

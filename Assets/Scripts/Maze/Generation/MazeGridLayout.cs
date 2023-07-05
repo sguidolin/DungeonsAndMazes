@@ -22,8 +22,6 @@ public class MazeGridLayout : MonoBehaviour
 	private float _tunnelChance = 0.25f;
 	[SerializeField]
 	private bool _allowTunnels = true;
-	[SerializeField]
-	private bool _allowSmartDigging = false;
 
 	[Space(10)]
 	[SerializeField]
@@ -66,7 +64,7 @@ public class MazeGridLayout : MonoBehaviour
 		if (string.IsNullOrEmpty(_seed))
 			_seed = RandomSeedGenerator.NewSeed();
 		// Create instance of the grid
-		_grid = new MazeGrid(_seed, _depth, _width, _fillRatio, _allowOverfilling, _allowSmartDigging);
+		_grid = new MazeGrid(_seed, _depth, _width, _fillRatio, _allowOverfilling);
 		// Instantiate matrix for rooms
 		_rooms = new MazeRoom[_depth, _width];
 		// Generate the maze
@@ -103,7 +101,7 @@ public class MazeGridLayout : MonoBehaviour
 		while (builder.MoveNext())
 		{
 			// Set here the information for the load screen
-			Debug.Log($"Generating... {_grid.Tiled} out of {_grid.Tiles}");
+			//Debug.Log($"Generating... {_grid.Tiled} out of {_grid.Tiles}");
 			yield return builder.Current;
 		}
 	}
@@ -114,7 +112,7 @@ public class MazeGridLayout : MonoBehaviour
 		{
 			for (int y = 0; y < _grid.Width; y++)
 			{
-				Debug.Log($"Spawning room in ({x},{y})");
+				//Debug.Log($"Spawning room in ({x},{y})");
 				// Ignore non-accessible tiles
 				if (_grid[x, y] == MazeDirection.None) continue;
 				// FirstOrDefault returns null when no match is found for a class
@@ -144,9 +142,9 @@ public class MazeGridLayout : MonoBehaviour
 				room.SetPosition(x, y);
 				// Store the reference to the room
 				_rooms[x, y] = room;
-				yield return null;
 			}
 		}
+		yield return null;
 	}
 
 	private IEnumerator BuildEvents()
@@ -200,6 +198,9 @@ public class MazeGridLayout : MonoBehaviour
 		yield return RevealRoom(room);
 	}
 
+	public MazeRoom GetSpawnRoom()
+		=> GetRoomAt(_grid.Spawn);
+
 	public MazeRoom GetFreeRoom()
 	{
 		MazeRoom result = null;
@@ -210,7 +211,7 @@ public class MazeGridLayout : MonoBehaviour
 			// Ensure that result is not null, since we're not spawning walls
 			// Rule is: room not empty (0), no events, not a tunnel
 			// Those are special rooms that are not considered available
-			isValid = result != null && result.Tile.Value > 0 && result.Event == null && !result.IsTunnel;
+			isValid = result != null && result.Tile.Value > 0 &&  result.Event == null && !result.IsTunnel && result != GetSpawnRoom();
 		}
 		return result;
 	}

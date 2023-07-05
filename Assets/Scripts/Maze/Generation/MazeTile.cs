@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 [System.Serializable]
@@ -20,9 +22,34 @@ public struct MazeTile
 			return openings;
 		}
 	}
+	public IEnumerable<MazeDirection> Entrances
+	{
+		get
+		{
+			foreach (MazeDirection direction in Cardinals)
+				if ((direction & _entrances) != 0)
+					yield return direction;
+		}
+	}
+	public IEnumerable<MazeDirection> Walls
+	{
+		get
+		{
+			foreach (MazeDirection direction in Cardinals)
+				if ((direction & _entrances) == 0)
+					yield return direction;
+		}
+	}
 
 	public void CreateOpening(MazeDirection direction)
 		=> _entrances |= direction;
+
+	public MazeDirection GetRandomDig()
+	{
+		MazeDirection[] directions = Walls.ToArray<MazeDirection>();
+		return directions[Random.Range(0, directions.Length)];
+	}
+
 
 	public static MazeDirection Block
 		=> (MazeDirection)0;

@@ -308,11 +308,10 @@ MonoBehaviour:
   _seed: 
   _depth: 20
   _width: 20
-  _fillRatio: 0.5
+  _fillRatio: 1
   _allowOverfilling: 0
   _tunnelChance: 0.4
   _allowTunnels: 1
-  _allowSmartDigging: 0
   _blueprints:
   - {fileID: 7010825947202548688, guid: 48fdc4731d715c94d995538374cdb4ae, type: 3}
   - {fileID: 7010825947202548688, guid: 4cf67b0638fe13047b4f3219b5ce7d85, type: 3}

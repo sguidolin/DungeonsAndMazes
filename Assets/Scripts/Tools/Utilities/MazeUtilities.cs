@@ -49,6 +49,23 @@ public static class MazeUtilities
 		return dir;
 	}
 
+	public static bool IsMoveLegal(this MazeTile[,] grid, MazeDirection direction, MazePosition currentPosition)
+	{
+		// Evaluate the border cases
+		if (direction == MazeDirection.North && currentPosition.x == 0)
+			return false;
+		if (direction == MazeDirection.South && currentPosition.x == grid.GetLength(0) - 1)
+			return false;
+		if (direction == MazeDirection.West && currentPosition.y == 0)
+			return false;
+		if (direction == MazeDirection.East && currentPosition.y == grid.GetLength(0) - 1)
+			return false;
+		return true;
+	}
+
+	public static MazeTile GetTileAt(this MazeTile[,] grid, MazePosition position)
+		=> grid[position.x, position.y];
+
 	private static MazeRoom GetRandom(this MazeRoom[] collection, bool takeTunnels, System.Func<MazeRoom, bool> predicate)
 	{
 		// Filter out tunnels from this function
@@ -85,6 +102,13 @@ public static class MazeUtilities
 	public static IEnumerable<MazeRoom> Flatten(this MazeRoom[,] grid)
 	{
 		foreach (MazeRoom room in grid) yield return room;
+	}
+
+	public static IEnumerable<MazePosition> ToPositions(this MazeTile[,] grid)
+	{
+		for (int x = 0; x < grid.GetLength(0); x++)
+			for (int y = 0; y < grid.GetLength(1); y++)
+				yield return new MazePosition(x, y);
 	}
 
 	#region Cryptography
