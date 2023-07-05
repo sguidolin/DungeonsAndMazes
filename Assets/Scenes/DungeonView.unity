@@ -1724,6 +1724,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9c40fff0b02178243bf049ec7f81cc42, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  useSmartDigging: 0
   _seedInput: {fileID: 539107163}
   _depthSlider: {fileID: 164137480}
   _widthSlider: {fileID: 306069587}

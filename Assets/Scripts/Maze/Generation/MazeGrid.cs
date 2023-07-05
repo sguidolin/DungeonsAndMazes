@@ -11,6 +11,8 @@ public class MazeGrid
 
 	private float _fillRatio;
 	private bool _allowOverfill;
+	private bool _allowSmartDig;
+
 	private MazeTile[,] _grid;
 
 	public string Seed => _seed;
@@ -46,7 +48,7 @@ public class MazeGrid
 	public MazeTile this[int x, int y] => _grid[x, y];
 	public MazeTile this[MazePosition p] => _grid[p.x, p.y];
 
-	public MazeGrid(string seed, int depth, int width, float fillRatio = 0.5f, bool allowOverfilling = false)
+	public MazeGrid(string seed, int depth, int width, float fillRatio = 0.5f, bool allowOverfilling = false, bool allowSmartDigging = false)
 	{
 		_seed = seed;
 		// Calculate the hash
@@ -59,6 +61,7 @@ public class MazeGrid
 		// Setup the filling logic
 		_fillRatio = fillRatio;
 		_allowOverfill = allowOverfilling;
+		_allowSmartDig = allowSmartDigging;
 		// Initialize the grid
 		_grid = new MazeTile[depth, width];
 		// Setup the random instance
@@ -75,7 +78,7 @@ public class MazeGrid
 		// Instantiate a list of workers
 		List<MazeWorker> workers = new List<MazeWorker>();
 		// Workers all start from the same position
-		MazePosition start = new MazePosition(Random.Range(0, _depth), Random.Range(0, _width));
+		MazePosition start = RandomPosition();
 		// Scale the number of max workers to the size by a range from 2 to 4
 		int maxWorkers = size / Random.Range(2, 5);
 
@@ -84,13 +87,14 @@ public class MazeGrid
 			// If we have no workers, hire more
 			if (workers.Count == 0)
 			{
+				//if (_allowSmartDig) start = RandomPosition();
 				// The amount we get is randomized
 				int recruits = Random.Range(1, maxWorkers + 1);
 				// Spawn the new batch of workers
 				for (int n = 0; n < recruits; n++)
 				{
 					// Lifespan is decided randomly between half-size and size
-					workers.Add(new MazeWorker(Random.Range(size / 2, size + 1), start));
+					workers.Add(new MazeWorker(_allowSmartDig, Random.Range(size / 2, size + 1), start));
 				}
 			}
 			// Progressively work every shift
@@ -116,6 +120,9 @@ public class MazeGrid
 			yield return null;
 		}
 	}
+
+	private MazePosition RandomPosition() 
+		=> new MazePosition(Random.Range(0, _depth), Random.Range(0, _width));
 
 	public bool IsMoveLegal(MazeDirection direction, MazePosition currentPosition)
 	{

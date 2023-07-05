@@ -22,6 +22,8 @@ public class MazeGridLayout : MonoBehaviour
 	private float _tunnelChance = 0.25f;
 	[SerializeField]
 	private bool _allowTunnels = true;
+	[SerializeField]
+	private bool _allowSmartDigging = false;
 
 	[Space(10)]
 	[SerializeField]
@@ -64,7 +66,7 @@ public class MazeGridLayout : MonoBehaviour
 		if (string.IsNullOrEmpty(_seed))
 			_seed = RandomSeedGenerator.NewSeed();
 		// Create instance of the grid
-		_grid = new MazeGrid(_seed, _depth, _width, _fillRatio, _allowOverfilling);
+		_grid = new MazeGrid(_seed, _depth, _width, _fillRatio, _allowOverfilling, _allowSmartDigging);
 		// Instantiate matrix for rooms
 		_rooms = new MazeRoom[_depth, _width];
 		// Generate the maze
@@ -149,8 +151,13 @@ public class MazeGridLayout : MonoBehaviour
 
 	private IEnumerator BuildEvents()
 	{
-		// TODO: Spawn Monster
-
+		// Spawn Monster
+		MazeEvent.Spawn<MazeMonster>(
+			_events,
+			1,
+			1,
+			this
+		);
 		// Spawning Death Pits
 		MazeEvent.Spawn<MazeDeathPit>(
 			_events,
@@ -165,7 +172,7 @@ public class MazeGridLayout : MonoBehaviour
 			Mathf.RoundToInt(_grid.Tiles * _portalRatio),
 			this
 		);
-		// All events were spawned now
+		// All events are spawned now
 		yield return null;
 	}
 	#endregion
@@ -173,13 +180,8 @@ public class MazeGridLayout : MonoBehaviour
 	public IEnumerable<MazeDirection> GetLegalMoves(MazePosition currentPosition)
 	{
 		MazeRoom currentRoom = GetRoomAt(currentPosition);
-		// Explicit the four cardinal directions
-		MazeDirection[] cardinalDirections = new MazeDirection[]
-		{
-			MazeDirection.North, MazeDirection.South, MazeDirection.West, MazeDirection.East
-		};
 		// Return the directions that match the room exits
-		return cardinalDirections.Where<MazeDirection>(dir => (dir & currentRoom.Tile) != 0);
+		return MazeTile.Cardinals.Where<MazeDirection>(dir => (dir & currentRoom.Tile) != 0);
 	}
 	public bool IsMoveLegal(MazeDirection direction, MazePosition currentPosition)
 	{

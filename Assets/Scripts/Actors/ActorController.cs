@@ -15,6 +15,8 @@ public abstract class ActorController : MonoBehaviour, IBusyResource
 	[Header("Actor Configuration")]
 	[SerializeField, Min(0.5f)]
 	protected float _traverseSpeed = 5f;
+	[SerializeField]
+	protected MazeNavigationMode _navMode = MazeNavigationMode.Locked;
 	[Header("World Position")]
 	[SerializeField, ReadOnly]
 	protected bool _isMoving = false;

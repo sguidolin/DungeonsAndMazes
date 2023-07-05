@@ -7,6 +7,8 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public class MazeGridViewer : MonoBehaviour
 {
+	public bool useSmartDigging = false;
+
 	[Header("UI Settings")]
 	public TMP_InputField _seedInput;
 
@@ -53,7 +55,10 @@ public class MazeGridViewer : MonoBehaviour
 
 		_isGenerating = true;
 		_display.text = "Generating...";
-		_grid = new MazeGrid(seed, depth, width, fillRatio, allowOverfilling);
+
+		_grid = new MazeGrid(seed,
+			depth, width, fillRatio,
+			allowOverfilling, useSmartDigging);
 		if (_grid.Tiles > 0)
 		{
 			float startTime = Time.time;

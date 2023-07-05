@@ -9,6 +9,18 @@ public struct MazeTile
 	public byte Value => (byte)_entrances;
 	public string Hex => ((byte)_entrances).ToString("X");
 
+	public int Openings
+	{
+		get
+		{
+			int openings = 0;
+			foreach (MazeDirection direction in Cardinals)
+				if ((direction & _entrances) != 0)
+					openings++;
+			return openings;
+		}
+	}
+
 	public void CreateOpening(MazeDirection direction)
 		=> _entrances |= direction;
 
@@ -16,6 +28,11 @@ public struct MazeTile
 		=> (MazeDirection)0;
 	public static MazeDirection Open
 		=> MazeDirection.North | MazeDirection.South | MazeDirection.West | MazeDirection.West;
+	public static MazeDirection[] Cardinals =>
+		new MazeDirection[]
+		{
+			MazeDirection.North, MazeDirection.South, MazeDirection.West, MazeDirection.East
+		};
 
 	#region Operators Overloads
 	public static bool operator ==(MazeTile current, MazeTile other)

@@ -312,6 +312,7 @@ MonoBehaviour:
   _allowOverfilling: 0
   _tunnelChance: 0.4
   _allowTunnels: 1
+  _allowSmartDigging: 0
   _blueprints:
   - {fileID: 7010825947202548688, guid: 48fdc4731d715c94d995538374cdb4ae, type: 3}
   - {fileID: 7010825947202548688, guid: 4cf67b0638fe13047b4f3219b5ce7d85, type: 3}
@@ -341,6 +342,7 @@ MonoBehaviour:
   _minimumDeathPits: 1
   _deathPitRatio: 0.025
   _events:
+  - {fileID: 11400000, guid: 51681c9f937f09b4b901072d3f8a14ab, type: 2}
   - {fileID: 11400000, guid: 345c420a32c3f1048b2eca4baf7de899, type: 2}
   - {fileID: 11400000, guid: e283c4d295de2f740a3148a6d900bc85, type: 2}
   _roomRevealTimer: 0.5

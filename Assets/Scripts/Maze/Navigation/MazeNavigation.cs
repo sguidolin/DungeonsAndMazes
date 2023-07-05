@@ -3,8 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
+public enum MazeNavigationMode : byte
+{
+	Locked,
+	RotateTowards
+}
+
 public static class MazeNavigation
 {
+	private const float ROTATION_HARDNESS = 0.025f;
+
 	public static MazeNavigationPath Calculate(MazePosition startPosition, MazeDirection direction)
 	{
 		int length = 0;
@@ -73,7 +81,8 @@ public static class MazeNavigation
 		};
 	}
 
-	public static IEnumerator Navigate(ActorController actor, MazeNavigationPath path)
+	public static IEnumerator Navigate(ActorController actor, MazeNavigationPath path,
+		MazeNavigationMode mode = MazeNavigationMode.Locked)
 	{
 		// Ensure that the actor is available
 		if (actor == null || actor.IsBusy) yield break;
@@ -92,6 +101,7 @@ public static class MazeNavigation
 			// Iterate through the points along the path
 			for (int step = 1; step < path.locations.Length; step++)
 			{
+				Vector3 previousPosition = actor.transform.position;
 				// Current position in the curve
 				float currentPosition = 0f;
 				// Loop until we traverse to 1f (= 100%)
@@ -107,6 +117,20 @@ public static class MazeNavigation
 					actor.transform.position = MathUtilities.Bezier3(
 						currentPosition, path.locations[step - 1], path.locations[step]
 					);
+					// If the navigation mode asks for rotation, then calculate
+					if (mode == MazeNavigationMode.RotateTowards)
+					{
+						// Calculate the rotation for the applied movement
+						Quaternion rotation = Quaternion.LookRotation(
+							actor.transform.position - previousPosition, Vector3.up
+						);
+						// Apply the rotation with some smoothing
+						actor.transform.rotation = Quaternion.Slerp(
+							actor.transform.rotation, rotation, ROTATION_HARDNESS
+						);
+						// Update the previous position for the next calculation
+						previousPosition = actor.transform.position;
+					}
 					// Wait for the next frame
 					yield return new WaitForEndOfFrame();
 				}

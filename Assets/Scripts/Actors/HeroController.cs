@@ -55,7 +55,7 @@ public class HeroController : ActorController
 				// Calculate our navigation path
 				MazeNavigationPath path = MazeNavigation.Calculate(_position, movement);
 				// Then traverse through the result
-				StartCoroutine(MazeNavigation.Navigate(this, path));
+				StartCoroutine(MazeNavigation.Navigate(this, path, _navMode));
 			}
 		}
 	}
