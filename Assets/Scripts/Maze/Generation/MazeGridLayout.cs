@@ -198,6 +198,8 @@ public class MazeGridLayout : MonoBehaviour
 		yield return RevealRoom(room);
 	}
 
+	public MazePosition GetSpawn()
+		=> _grid.Spawn;
 	public MazeRoom GetSpawnRoom()
 		=> GetRoomAt(_grid.Spawn);
 
@@ -211,7 +213,7 @@ public class MazeGridLayout : MonoBehaviour
 			// Ensure that result is not null, since we're not spawning walls
 			// Rule is: room not empty (0), no events, not a tunnel
 			// Those are special rooms that are not considered available
-			isValid = result != null && result.Tile.Value > 0 &&  result.Event == null && !result.IsTunnel && result != GetSpawnRoom();
+			isValid = result != null && result.Tile.Value > 0 && result.Event == null && !result.IsTunnel && result != GetSpawnRoom();
 		}
 		return result;
 	}

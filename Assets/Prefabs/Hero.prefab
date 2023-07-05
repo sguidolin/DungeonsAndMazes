@@ -724,7 +724,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _animator: {fileID: 6181240369024020871}
   _renderer: {fileID: 6181240369024020864}
-  _traverseSpeed: 0.66
+  _traverseSpeed: 0.75
+  _navMode: 0
   _isMoving: 0
   _position:
     x: 0

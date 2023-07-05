@@ -272,10 +272,10 @@ public class MazeGrid
 
 	// A tunnel must be in the combo list, and not hold an event
 	public static bool CanBeTunnel(MazeRoom room)
-		=> room != null && room.Event == null && TUNNEL_ROOMS.Contains<MazeTile>(room.Tile);
+		=> room != null && room.Position != Instance.GetSpawn() && room.Event == null && TUNNEL_ROOMS.Contains<MazeTile>(room.Tile);
 	// An event must not be a tunnel, and be an actual room (not a filled block)
 	public static bool CanBeEvent(MazeRoom room)
-		=> room != null && !room.IsTunnel && room.Tile != MazeTile.Block;
+		=> room != null && room.Position != Instance.GetSpawn() && !room.IsTunnel && room.Tile != MazeTile.Block;
 
 	public static MazeGridLayout Instance => GameManager.Instance.grid;
 }
