@@ -250,7 +250,7 @@ MonoBehaviour:
   m_MinValue: 0
   m_MaxValue: 1
   m_WholeNumbers: 0
-  m_Value: 0.5
+  m_Value: 1
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:
@@ -1729,6 +1729,7 @@ MonoBehaviour:
   _widthSlider: {fileID: 306069587}
   _ratioSlider: {fileID: 40913151}
   _overfillToggle: {fileID: 1638305512}
+  _generateCaller: {fileID: 842051448}
   _display: {fileID: 1110452759}
 --- !u!4 &728810669
 Transform:

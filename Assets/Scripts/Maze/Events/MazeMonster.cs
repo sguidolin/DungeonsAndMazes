@@ -11,6 +11,6 @@ public class MazeMonster : MazeEvent
 		// Flag the actor as dead
 		caller.FlagAsDead();
 		// TODO: Trigger game over
-		yield return new WaitForEndOfFrame();
+		yield return null;
 	}
 }

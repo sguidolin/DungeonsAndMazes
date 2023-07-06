@@ -2,16 +2,19 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 public class MazeGrid
 {
+	public const int MAX_SIZE = 30;
+	public const int MAX_DISCREPANCY = 10;
+
 	private int _hash;
 	private string _seed;
 	private int _width, _depth;
 
 	private float _fillRatio;
 	private bool _allowOverfill;
+	private bool _verifyPathIntegrity;
 
 	private MazeTile[,] _grid;
 	private MazePosition _spawn;
@@ -57,14 +60,32 @@ public class MazeGrid
 		_hash = MazeUtilities.ComputeSeed(seed);
 		// Configure the size of the grid
 		// Depth is the x-axis
-		_depth = depth;
+		_depth = depth > MAX_SIZE ? MAX_SIZE : depth;
 		// Width is the y-axis
-		_width = width;
+		_width = width > MAX_SIZE ? MAX_SIZE : width;
+		// Ensure the sizes are OK
+		// We must apply some limitations in order to check the path integrity
+		if (Mathf.Abs(_depth - _width) >= MAX_DISCREPANCY)
+		{
+			// We round up to the nearest multiple of MAX_DISCREPANCY / 2
+			// Also make sure we're still within MAX_SIZE
+			if (_depth > _width)
+			{
+				_width = MathUtilities.RoundNearest(_width + MAX_DISCREPANCY + 1, MAX_DISCREPANCY / 2);
+				if (_width > MAX_SIZE) _width = MAX_SIZE;
+			}
+			else
+			{
+				_depth = MathUtilities.RoundNearest(_depth + MAX_DISCREPANCY + 1, MAX_DISCREPANCY / 2);
+				if (_depth > MAX_SIZE) _depth = MAX_SIZE;
+			}
+		}
 		// Setup the filling logic
 		_fillRatio = fillRatio;
 		_allowOverfill = allowOverfilling;
+		_verifyPathIntegrity = true;
 		// Initialize the grid
-		_grid = new MazeTile[depth, width];
+		_grid = new MazeTile[_depth, _width];
 		// Setup the random instance
 		Random.InitState(_hash);
 	}
@@ -121,8 +142,11 @@ public class MazeGrid
 			// Finally, let those who are done retire by updating our list
 			workers = workers.Where<MazeWorker>(worker => !worker.Retired).ToList<MazeWorker>();
 		}
-		// After we filled, we need to ensure that every point is connected to the spawn
-		yield return VerifyIntegrity();
+		if (_verifyPathIntegrity)
+		{
+			// After we filled, we need to ensure that every point is connected to the spawn
+			yield return VerifyIntegrity();
+		}
 		// Update the process status
 		IsGenerated = true;
 	}
@@ -131,7 +155,10 @@ public class MazeGrid
 	{
 		// Grab all valid tiles to evaluate
 		IEnumerable<MazePosition> tiles = _grid.ToPositions()
+			.OrderByDescending<MazePosition, int>(position => MazePosition.Distance(position, _spawn))
 			.Where<MazePosition>(position => _grid.GetTileAt(position).Value != 0);
+		// How many tiles do we have to evaluate?
+		int total = tiles.Count<MazePosition>();
 		// We need to evaluate every tile
 		while (tiles.Any<MazePosition>())
 		{
@@ -144,7 +171,7 @@ public class MazeGrid
 				// If we already validated this position then skip
 				if (validated.Contains(position)) continue;
 				// Run the pathing algorithm to see if this position can get to the spawn
-				MazeNavigationTile evaluated = MazeNavigation.EnsureNavigation(_grid, position, _spawn);
+				MazeNavigationTile evaluated = MazeNavigation.EnsureNavigation(this, position, _spawn);
 				if (evaluated == null)
 				{
 					// We couldn't find a path
@@ -195,35 +222,6 @@ public class MazeGrid
 		yield return null;
 	}
 
-	private MazePosition EvaluatePathTo(MazeDirection from, MazePosition start, MazePosition end)
-	{
-		// If we reached the end we can return that
-		if (start == end) return end;
-		// Check if we can move
-		if (HasLegalMoves(start))
-		{
-			// If we can, we need to evaluate every direction
-			foreach (MazeDirection direction in _grid[start.x, start.y].Entrances)
-			{
-				// It's the direction we came from
-				// Ignore it because it's not good
-				if (from != 0 && direction.Opposite() == from)
-					continue;
-				// Check if we have a legal move
-				if (IsMoveLegal(direction, start))
-				{
-					// If we do, move down the evaluation
-					MazePosition nextPosition = start;
-					nextPosition.Move(direction);
-					// This should eventually return either start or end
-					return EvaluatePathTo(direction, nextPosition, end);
-				}
-			}
-		}
-		// If we can't move anywhere, then return the start
-		return start;
-	}
-
 	private bool HasFreeTiles()
 		=> _grid.Flatten().Any<MazeTile>(tile => tile.Value == 0);
 	private MazePosition RandomPosition()
@@ -242,18 +240,7 @@ public class MazeGrid
 
 	public bool IsMoveLegal(MazeDirection direction, MazePosition currentPosition)
 		=> _grid.IsMoveLegal(direction, currentPosition);
-	//{
-	//	// Evaluate the border cases
-	//	if (direction == MazeDirection.North && currentPosition.x == 0)
-	//		return false;
-	//	if (direction == MazeDirection.South && currentPosition.x == _depth - 1)
-	//		return false;
-	//	if (direction == MazeDirection.West && currentPosition.y == 0)
-	//		return false;
-	//	if (direction == MazeDirection.East && currentPosition.y == _width - 1)
-	//		return false;
-	//	return true;
-	//}
+
 	public bool HasLegalMoves(MazePosition currentPosition)
 		=> _grid[currentPosition.x, currentPosition.y].Entrances.Any<MazeDirection>(direction => IsMoveLegal(direction, currentPosition));
 
@@ -272,10 +259,13 @@ public class MazeGrid
 
 	// A tunnel must be in the combo list, and not hold an event
 	public static bool CanBeTunnel(MazeRoom room)
-		=> room != null && room.Position != Instance.GetSpawn() && room.Event == null && TUNNEL_ROOMS.Contains<MazeTile>(room.Tile);
+		=> room != null && room.Event == null && TUNNEL_ROOMS.Contains<MazeTile>(room.Tile);
 	// An event must not be a tunnel, and be an actual room (not a filled block)
 	public static bool CanBeEvent(MazeRoom room)
-		=> room != null && room.Position != Instance.GetSpawn() && !room.IsTunnel && room.Tile != MazeTile.Block;
+		=> room != null && !room.IsTunnel && room.Tile != MazeTile.Block;
+
+	public static MazeRoom FindRoomAt(Vector3 position)
+		=> Instance.FindRoomAt(position);
 
 	public static MazeGridLayout Instance => GameManager.Instance.grid;
 }

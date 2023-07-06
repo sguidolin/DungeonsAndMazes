@@ -10,9 +10,9 @@ public class MazeGridLayout : MonoBehaviour
 	[SerializeField]
 	private string _seed;
 
-	[SerializeField, Range(5, 50)]
+	[SerializeField, Range(5, 30)]
 	private int _depth = 20;
-	[SerializeField, Range(5, 50)]
+	[SerializeField, Range(5, 30)]
 	private int _width = 20;
 	[SerializeField, Range(0.25f, 1f)]
 	private float _fillRatio = 0.5f;
@@ -51,6 +51,7 @@ public class MazeGridLayout : MonoBehaviour
 	private MazeRoom[,] _rooms;
 
 	public bool IsGenerated { get; private set; } = false;
+	public string Status { get; private set; } = string.Empty;
 
 	void Awake()
 	{
@@ -93,10 +94,12 @@ public class MazeGridLayout : MonoBehaviour
 		}
 		// Flag process as complete
 		IsGenerated = true;
+		Status = "Done!";
 	}
 
 	private IEnumerator BuildGrid()
 	{
+		Status = "Carving the maze...";
 		IEnumerator builder = _grid.Generate();
 		while (builder.MoveNext())
 		{
@@ -108,6 +111,7 @@ public class MazeGridLayout : MonoBehaviour
 
 	private IEnumerator BuildLayout()
 	{
+		Status = "Placing the tiles...";
 		for (int x = 0; x < _grid.Depth; x++)
 		{
 			for (int y = 0; y < _grid.Width; y++)
@@ -118,7 +122,7 @@ public class MazeGridLayout : MonoBehaviour
 				// FirstOrDefault returns null when no match is found for a class
 				MazeRoom blueprint = _blueprints.GetRandomTile(room => room.Tile == _grid[x, y]);
 				// Now we need to check if we could place a tunnel here
-				if (_allowTunnels)
+				if (_allowTunnels && _grid.Spawn != new MazePosition(x, y))
 				{
 					float tunnelChance = _tunnelChance;
 					// If it's a 4-way room I want the chance to be halved
@@ -149,6 +153,7 @@ public class MazeGridLayout : MonoBehaviour
 
 	private IEnumerator BuildEvents()
 	{
+		Status = "Generating events...";
 		// Spawn Monster
 		MazeEvent.Spawn<MazeMonster>(
 			_events,
@@ -218,10 +223,21 @@ public class MazeGridLayout : MonoBehaviour
 		return result;
 	}
 
+	public MazeRoom FindRoomAt(Vector3 position)
+	{
+		foreach (MazeRoom room in _rooms)
+			if (room.ContainsPosition(position))
+				return room;
+		return null;
+	}
+
 	public MazeRoom GetRoomAt(MazePosition position)
 		=> GetRoomAt(position.x, position.y);
 	public MazeRoom GetRoomAt(int x, int y)
 		=> _rooms[x, y];
+
+	public IEnumerable<MazeRoom> GetEvents<T>() where T : MazeEvent
+		=> _rooms.Flatten().Where<MazeRoom>(room => room.Event != null && room.Event.GetType() == typeof(T));
 
 	public bool HasEvent(MazePosition position)
 		=> GetRoomAt(position).Event != null;

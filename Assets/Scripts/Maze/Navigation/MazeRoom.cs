@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -70,8 +69,18 @@ public class MazeRoom : MonoBehaviour
 			// Then grow the localScale
 			transform.localScale = VectorUtils.Uniform3(currentScale);
 			// Wait for the next frame
-			yield return new WaitForEndOfFrame();
+			yield return null;
 		}
 		IsVisible = true;
+	}
+
+	public bool ContainsPosition(Vector3 position)
+	{
+		Rect roomBounds = new Rect(
+			_worldPosition.x - (ROOM_UNIT_SIZE * 0.5f),
+			_worldPosition.z - (ROOM_UNIT_SIZE * 0.5f),
+			ROOM_UNIT_SIZE, ROOM_UNIT_SIZE
+		);
+		return roomBounds.Contains(position.ToVector2());
 	}
 }

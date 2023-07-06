@@ -32,8 +32,8 @@ public abstract class ActorController : MonoBehaviour, IBusyResource
 
 	void Awake()
 	{
-		Assert.IsFalse(_animator == null, "Animator not set!");
-		Assert.IsFalse(_renderer == null, "Renderer not set!");
+		Assert.IsNotNull(_animator, "Animator not set!");
+		Assert.IsNotNull(_renderer, "Renderer not set!");
 	}
 
 	public void SetPosition(MazePosition position)
@@ -54,6 +54,11 @@ public abstract class ActorController : MonoBehaviour, IBusyResource
 
 	public void FlagAsDead()
 		=> _isAlive = false;
+
+	public void SetVisible(bool value)
+		=> _renderer.enabled = value;
+
+	protected abstract IEnumerator Move(Vector2 input);
 
 	#region IBusyResource Implementation
 	public abstract void OnLockApplied();

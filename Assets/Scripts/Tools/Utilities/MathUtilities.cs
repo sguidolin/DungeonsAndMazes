@@ -79,4 +79,16 @@ public static class MathUtilities
 		float power = Mathf.Pow(10f, decimals);
 		return Mathf.Round(value * power) / power;
 	}
+
+	public static int RoundNearest(int value, int multiple)
+	{
+		int remainder = value % multiple;
+		int result = value - remainder;
+		if (remainder > 0) // >= (multiple / 2)
+			result += multiple;
+		return result;
+	}
+
+	public static bool RectOverlaps(this Rect a, Rect b)
+		=> (a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y);
 }

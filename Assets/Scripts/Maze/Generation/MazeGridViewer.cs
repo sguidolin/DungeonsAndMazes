@@ -14,6 +14,7 @@ public class MazeGridViewer : MonoBehaviour
 	public Slider _widthSlider;
 	public Slider _ratioSlider;
 	public Toggle _overfillToggle;
+	public Button _generateCaller;
 
 	public TextMeshProUGUI _display;
 
@@ -28,6 +29,7 @@ public class MazeGridViewer : MonoBehaviour
 			_widthSlider != null &&
 			_ratioSlider != null &&
 			_overfillToggle != null &&
+			_generateCaller != null &&
 			_display != null;
 	}
 
@@ -45,6 +47,8 @@ public class MazeGridViewer : MonoBehaviour
 	IEnumerator BuildDungeon(string seed)
 	{
 		if (_isGenerating) yield break;
+
+		_generateCaller.interactable = false;
 
 		int depth = (int)_depthSlider.value;
 		int width = (int)_widthSlider.value;
@@ -72,6 +76,8 @@ public class MazeGridViewer : MonoBehaviour
 			_display.text = "Nothing to see here.";
 		// Finished generating
 		_isGenerating = false;
+
+		_generateCaller.interactable = true;
 	}
 
 	private void PrintDungeon(float started, MazeGrid grid)
@@ -95,7 +101,7 @@ public class MazeGridViewer : MonoBehaviour
 					// If the grid is generated and we reach the spawn then change the color
 					if (_grid.IsGenerated && _grid[x, y].Value != 0)
 					{
-						if (MazeNavigation.EnsureNavigation(_grid.Grid, new MazePosition(x, y), _grid.Spawn) != null)
+						if (MazeNavigation.EnsureNavigation(_grid, new MazePosition(x, y), _grid.Spawn) != null)
 							colorFormat = "<color=green>{0}</color>";
 						else
 							colorFormat = "<color=red>{0}</color>";

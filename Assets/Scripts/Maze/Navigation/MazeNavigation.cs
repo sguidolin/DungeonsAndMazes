@@ -12,7 +12,7 @@ public enum MazeNavigationMode : byte
 public static class MazeNavigation
 {
 	#region Actor Navigation
-	private const float ROTATION_HARDNESS = 0.025f;
+	private const float ROTATION_HARDNESS = 0.525f;
 
 	public static MazeNavigationPath Calculate(MazePosition startPosition, MazeDirection direction)
 	{
@@ -83,7 +83,7 @@ public static class MazeNavigation
 	}
 
 	public static IEnumerator Navigate(ActorController actor, MazeNavigationPath path,
-		MazeNavigationMode mode = MazeNavigationMode.Locked)
+		bool revealWhileTraveling, MazeNavigationMode mode = MazeNavigationMode.Locked)
 	{
 		// Ensure that the actor is available
 		if (actor == null || actor.IsBusy) yield break;
@@ -94,9 +94,12 @@ public static class MazeNavigation
 		{
 			// Update the grid position right away
 			actor.SetPosition(path.end);
-			// Reveal all the rooms in the path
-			foreach (MazeRoom room in path.rooms)
-				yield return MazeGrid.Instance.RevealRoom(room);
+			if (revealWhileTraveling)
+			{
+				// Reveal all the rooms in the path
+				foreach (MazeRoom room in path.rooms)
+					yield return MazeGrid.Instance.RevealRoom(room);
+			}
 			// Begin the animation
 			actor.SetAnimatorFlag("IsMoving", true);
 			// Iterate through the points along the path
@@ -132,35 +135,24 @@ public static class MazeNavigation
 						// Update the previous position for the next calculation
 						previousPosition = actor.transform.position;
 					}
+					// Set the visibility based on the room we're currently in
+					MazeRoom currentRoom = MazeGrid.Instance.FindRoomAt(actor.transform.position);
+					if (currentRoom != null) actor.SetVisible(currentRoom.IsVisible);
 					// Wait for the next frame
-					yield return new WaitForEndOfFrame();
+					yield return null;
 				}
 			}
 			// Flag the actor as no longer moving
 			actor.SetAnimatorFlag("IsMoving", false);
-			// Evaluate the room we find ourselves in for events
-			if (MazeGrid.Instance.HasEvent(actor.Position))
-			{
-				// If there's an event then we want to trigger it
-				MazeRoom eventRoom = MazeGrid.Instance.GetRoomAt(actor.Position);
-				// Wait for the event to run its trigger logic
-				yield return eventRoom.Event.OnEventTrigger(actor);
-			}
 			// Exiting from the scope will free up the actor automatically
-			foreach (MazeEvent @event in MazeGrid.Instance.GetEventsInProximity(actor.Position))
-			{
-				// TODO: Enable some UI?
-				// This should be done when the turn starts
-				Debug.Log($"Event detected in proximity: {@event.GetType()}");
-			}
 		}
 	}
 	#endregion
 
-	public static MazeNavigationTile EnsureNavigation(MazeTile[,] map, MazePosition start, MazePosition end)
+	public static MazeNavigationTile EnsureNavigation(MazeGrid grid, MazePosition start, MazePosition end)
 	{
 		// If we're in an empty tile then we can't move
-		if (map.GetTileAt(start).Value == 0) return null;
+		if (grid[start].Value == 0) return null;
 		// Create the starting tile for our navigation
 		MazeNavigationTile startingTile = new MazeNavigationTile
 		{
@@ -196,7 +188,7 @@ public static class MazeNavigation
 			activeTiles.Remove(checkTile);
 
 			// Get the tiles that we can reach from here
-			IEnumerable<MazeNavigationTile> walkableTiles = GetReachableTiles(map, checkTile, endingTile);
+			IEnumerable<MazeNavigationTile> walkableTiles = GetReachableTiles(grid, checkTile, endingTile);
 			// Iterate through each one to check if it's an active tile
 			foreach (MazeNavigationTile walkableTile in walkableTiles)
 			{
@@ -225,17 +217,17 @@ public static class MazeNavigation
 		return null;
 	}
 
-	private static IEnumerable<MazeNavigationTile> GetReachableTiles(MazeTile[,] map, MazeNavigationTile current, MazeNavigationTile target)
+	private static IEnumerable<MazeNavigationTile> GetReachableTiles(MazeGrid grid, MazeNavigationTile current, MazeNavigationTile target)
 	{
 		List<MazeNavigationTile> possibleTiles = new List<MazeNavigationTile>();
 		// Iterate through every direction we can move
 		foreach (MazeDirection direction in MazeTile.Cardinals)
 		{
 			// We check to make sure the move is legal
-			if (map.IsMoveLegal(direction, current.position))
+			if (grid.IsMoveLegal(direction, current.position))
 			{
 				MazePosition possiblePosition = current.position;
-				MazeTile tile = map.GetTileAt(possiblePosition);
+				MazeTile tile = grid[possiblePosition];
 				// Move in the direction to add the new tile
 				possiblePosition.Move(direction);
 				// If the tile is empty we discard it

@@ -35,19 +35,64 @@ public static class MazeUtilities
 		return to;
 	}
 
+	public static Vector2 ToVector2(this MazeDirection d)
+	{
+		Vector2 v = Vector2.zero;
+		if ((d & MazeDirection.North) != 0)
+			v.x += 1f;
+		if ((d & MazeDirection.South) != 0)
+			v.x -= 1f;
+		if ((d & MazeDirection.East) != 0)
+			v.y += 1f;
+		if ((d & MazeDirection.West) != 0)
+			v.y -= 1f;
+		return v;
+	}
+
 	public static MazeDirection ToDirection(this Vector2 v)
 	{
-		MazeDirection dir = 0;
+		MazeDirection d = 0;
 		if (v.x > 0f)
-			dir |= MazeDirection.North;
+			d |= MazeDirection.North;
 		if (v.x < 0f)
-			dir |= MazeDirection.South;
+			d |= MazeDirection.South;
 		if (v.y > 0f)
-			dir |= MazeDirection.East;
+			d |= MazeDirection.East;
 		if (v.y < 0f)
-			dir |= MazeDirection.West;
-		return dir;
+			d |= MazeDirection.West;
+		return d;
 	}
+
+	public static Quaternion DirectionToRotation(MazeDirection direction) =>
+		direction switch
+		{
+			MazeDirection.North => Quaternion.Euler(0f, 90f, 0f),
+			MazeDirection.West => Quaternion.Euler(0f, 0f, 0f),
+			MazeDirection.East => Quaternion.Euler(0f, 180f, 0f),
+			MazeDirection.South => Quaternion.Euler(0f, 270f, 0f),
+			_ => Quaternion.identity
+		};
+	public static MazeDirection RotationToDirection(Quaternion rotation)
+	{
+		float angle = Mathf.Clamp(rotation.eulerAngles.y, 0f, 360f);
+		// Fix angle if needed
+		if (angle >= 360f) angle -= 360f;
+		switch (angle)
+		{
+			case float y when y >= 0f && y < 90f:
+				return MazeDirection.West;
+			case float y when y >= 90f && y < 180f:
+				return MazeDirection.North;
+			case float y when y >= 180f && y < 270f:
+				return MazeDirection.East;
+			case float y when y >= 270f:
+				return MazeDirection.South;
+			default:
+				Debug.Log(angle);
+				return MazeDirection.None;
+		}
+	}
+
 
 	public static bool IsMoveLegal(this MazeTile[,] grid, MazeDirection direction, MazePosition currentPosition)
 	{
