@@ -208,17 +208,20 @@ public class MazeGridLayout : MonoBehaviour
 	public MazeRoom GetSpawnRoom()
 		=> GetRoomAt(_grid.Spawn);
 
-	public MazeRoom GetFreeRoom()
+	public MazeRoom GetFreeRoom(bool forceHiddenRoom = false)
 	{
 		MazeRoom result = null;
 		bool isValid = false;
 		while (!isValid)
 		{
+			// TODO: This event will need to ensure that it's not a room with a player
 			result = _rooms[Random.Range(0, _grid.Depth - 1), Random.Range(0, _grid.Width - 1)];
 			// Ensure that result is not null, since we're not spawning walls
 			// Rule is: room not empty (0), no events, not a tunnel
 			// Those are special rooms that are not considered available
 			isValid = result != null && result.Tile.Value > 0 && result.Event == null && !result.IsTunnel && result != GetSpawnRoom();
+			if (forceHiddenRoom && _rooms.Flatten().Any<MazeRoom>(room => !room.IsVisible))
+				isValid = isValid && !result.IsVisible;
 		}
 		return result;
 	}

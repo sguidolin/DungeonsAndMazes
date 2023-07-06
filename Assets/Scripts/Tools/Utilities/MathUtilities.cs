@@ -43,34 +43,46 @@ public static class MathUtilities
 	#endregion
 
 	#region Easing Functions
-	public static float EaseOutBounce(float x)
+	public static float EaseInCubic(float t)
+		=> t * t * t;
+	public static float EaseOutCubic(float t)
+		=> 1f - Mathf.Pow(1f - t, 3f);
+
+	public static float EaseInQuart(float t)
+		=> t * t * t * t;
+	public static float EaseOutQuart(float t)
+		=> 1f - Mathf.Pow(1f - t, 4f);
+	public static float EaseInOutQuart(float t)
+		=> t < 0.5f ? 8f * t * t * t * t : 1f - Mathf.Pow(-2f * t + 2f, 4f) / 2f;
+
+	public static float EaseOutBounce(float t)
 	{
 		// Consts
 		const float n1 = 7.5625f;
 		const float d1 = 2.75f;
 
-		if (x < 1f / d1)
+		if (t < 1f / d1)
 		{
-			return n1 * x * x;
+			return n1 * t * t;
 		}
-		else if (x < 2f / d1)
+		else if (t < 2f / d1)
 		{
-			x -= 1.5f;
-			return n1 * (x / d1) * x + 0.75f;
+			t -= 1.5f / d1;
+			return n1 * t * t + 0.75f;
 		}
-		else if (x < 2.5f / d1)
+		else if (t < 2.5f / d1)
 		{
-			x -= 2.25f;
-			return n1 * (x / d1) * x + 0.9375f;
+			t -= 2.25f / d1;
+			return n1 * t * t + 0.9375f;
 		}
 		else
 		{
-			x -= 2.625f;
-			return n1 * (x / d1) * x + 0.984375f;
+			t -= 2.625f / d1;
+			return n1 * t * t + 0.984375f;
 		}
 	}
-	public static float EaseInBounce(float x)
-		=> 1f - EaseOutBounce(1f - x);
+	public static float EaseInBounce(float t)
+		=> 1f - EaseOutBounce(1f - t);
 	#endregion
 
 	public static float Round(float value, int decimals)

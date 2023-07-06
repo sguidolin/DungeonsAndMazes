@@ -1,21 +1,17 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
 [DisallowMultipleComponent]
-[RequireComponent(typeof(BoxCollider))]
 public class ProjectileController : ActorController
 {
-	private BoxCollider _collider;
-
 	public MazeDirection direction;
 
 	public bool IsTraveling { get; private set; } = true;
 
 	void Start()
 	{
-		_collider = GetComponent<BoxCollider>();
-
 		_isAlive = true;
 		_renderer.enabled = false;
 		// If we set a direction which is considered pure, then we start the movement automatically
@@ -33,15 +29,20 @@ public class ProjectileController : ActorController
 		while (_isAlive)
 		{
 			yield return Move(direction.ToVector2());
-
+			// TODO: We need to evaluate if we hit the player or a monster
+			// If we hit anything we should handle it and also make some other animation?
 			direction = MazeUtilities.RotationToDirection(transform.rotation);
 			// Need to figure out how to update orientation
 			// If the current direction is not a legal move we set the death
 			if (!MazeGrid.Instance.IsMoveLegal(direction, Position))
 				_isAlive = false;
 		}
-		// TODO: Make some death animation
-		// TODO: Evaluate whatever we need, like moving the monster
+		// Get all the monsters (even though it should only be one)
+		IEnumerable<MazeRoom> nests = MazeGrid.Instance.GetEvents<MazeMonster>();
+		// Swap the monster with any free room that wasn't discovered yet
+		// If the entire map was somehow revealed, any free room is fine
+		foreach (MazeRoom monster in nests) MazeEvent.Swap(monster, MazeGrid.Instance.GetFreeRoom(true));
+		// Trigger the death animation, which will invoke OnDeath
 		SetAnimatorTrigger("Dead");
 		IsTraveling = false;
 	}

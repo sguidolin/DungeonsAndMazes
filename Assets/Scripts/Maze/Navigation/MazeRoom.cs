@@ -10,6 +10,7 @@ public class MazeRoom : MonoBehaviour
 	[SerializeField]
 	private MazeTile _tile;
 	private MazeEvent _event;
+	private GameObject _eventInstance = null;
 	[SerializeField]
 	private bool _isTunnel = false;
 	[SerializeField, Tooltip("Points that make up a tunnel")]
@@ -23,6 +24,8 @@ public class MazeRoom : MonoBehaviour
 
 	public MazeTile Tile => _tile;
 	public MazeEvent Event => _event;
+	public GameObject EventObject => _eventInstance;
+
 	public bool IsTunnel => _isTunnel;
 
 	public MazePosition Position => _position;
@@ -50,7 +53,23 @@ public class MazeRoom : MonoBehaviour
 	{
 		_event = @event;
 		// Spawn the contents of the event
-		Instantiate(@event.prefab, transform);
+		_eventInstance = Instantiate(@event.prefab, transform);
+	}
+	public void SetEvent(MazeEvent @event, GameObject instance)
+	{
+		_event = @event;
+		if (instance == null)
+		{
+			// If we passed a null, we destroy our current reference
+			if (_eventInstance != null) Destroy(_eventInstance);
+		}
+		else
+		{
+			// Move the event instance down this object
+			instance.transform.parent = this.transform;
+			// Update the event instance
+			_eventInstance = instance;
+		}
 	}
 
 	public IEnumerator RevealRoom(float duration)
@@ -67,7 +86,7 @@ public class MazeRoom : MonoBehaviour
 			// Apply it to a clamped 0..1
 			currentScale = Mathf.Clamp01(currentScale + variation);
 			// Then grow the localScale
-			transform.localScale = VectorUtils.Uniform3(currentScale);
+			transform.localScale = VectorUtils.Uniform3(MathUtilities.EaseInOutQuart(currentScale));
 			// Wait for the next frame
 			yield return null;
 		}

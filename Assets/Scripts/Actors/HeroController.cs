@@ -146,19 +146,20 @@ public class HeroController : ActorController
 			using (this.Busy())
 			{
 				_projectilesShot++;
-				// TODO: Instantiate Arrow prefab and wait for its evaluation
+				// Instantiate the arrow prefab
 				GameObject instance = Instantiate(_projectile.gameObject, MazeGrid.Instance.transform);
+				// Get the controller class from the instance
 				ProjectileController projectile = instance.GetComponent<ProjectileController>();
+				// Set the starting values
 				projectile.SetPosition(Position);
 				projectile.direction = aim.ToDirection();
-				// Wait until the projectile is done traveling
-				//yield return new WaitWhile(() => projectile.IsTraveling);
 				// Force override the view of this element
 				_ammunitions.gameObject.SetActive(true);
 				_ammunitions.text = string.Empty;
 				int numberOfDots = 3;
 				float currentTimer = 0f;
 				float secondsPerDot = 1f / numberOfDots;
+				// Wait until the projectile is done traveling
 				while (projectile.IsTraveling)
 				{
 					currentTimer += Time.deltaTime;
@@ -173,8 +174,8 @@ public class HeroController : ActorController
 				}
 				// Update the ammunitions text
 				_ammunitions.text = $"{_projectilesShot}/{_projectilesAvailable}";
-				// Destroy the GameObject for the projectile
-				// TODO: Move the monster
+				// Destroy the arrow instance since it's done
+				Destroy(instance);
 			}
 		}
 		yield return null;

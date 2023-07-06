@@ -34,4 +34,12 @@ public abstract class MazeEvent : ScriptableObject
 			}
 		}
 	}
+
+	public static void Swap(MazeRoom current, MazeRoom target)
+	{
+		MazeEvent @event = current.Event;
+		GameObject instance = current.EventObject;
+		current.SetEvent(target.Event, target.EventObject);
+		target.SetEvent(@event, instance);
+	}
 }
