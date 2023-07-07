@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UI;
 
 public enum MazeNavigationMode : byte
 {
@@ -149,10 +150,57 @@ public static class MazeNavigation
 	}
 	#endregion
 
-	public static MazeNavigationTile EnsureNavigation(MazeGrid grid, MazePosition start, MazePosition end)
+	#region Maze Integrity Validation
+	private static void GraphIntegrity(MazePosition position, List<MazePosition> graphed,
+		MazePosition source, MazeGrid grid, ref int[,] map)
 	{
-		// If we're in an empty tile then we can't move
-		if (grid[start].Value == 0) return null;
+		// Iterate through every possible direction of movement
+		foreach (MazeDirection direction in MazeTile.Cardinals)
+		{
+			// We check to make sure the move is legal
+			if (grid.IsMoveLegal(direction, position))
+			{
+				// Calculate the next position
+				MazePosition next = position;
+				MazeTile tile = grid[next];
+				// If the tile is empty we discard it
+				if (tile.Value == 0)
+					continue;
+				// If we can't move there, we ignore it
+				if (!tile.Entrances.Contains(direction))
+					continue;
+				// Move in the direction
+				next.Move(direction);
+				// Check if this is in the graph
+				if (graphed.Contains(next))
+					continue;
+				// If it's not we add it
+				graphed.Add(next);
+				// And we calculate the map distance to the source
+				map[next.x, next.y] = MazePosition.Distance(next, source);
+				// Then we call this again for the next position
+				GraphIntegrity(next, graphed, source, grid, ref map);
+			}
+		}
+	}
+
+	public static int[,] GetIntegrityMap(MazeGrid grid, MazePosition source)
+	{
+		// Initialize the map to the same size of the grid
+		int[,] map = MazeUtilities.Matrix<int>(grid.Depth, grid.Width, -1);
+		// Keep track of the positions that we already mapped
+		List<MazePosition> explored = new List<MazePosition>();
+		// Populate the matrix with the distance as we explore
+		GraphIntegrity(source, explored, source, grid, ref map);
+		// All we do is populate the map and return, handle connections elsewhere
+		return map;
+	}
+
+	public static MazeNavigationTile GetNavigationPath(MazeGrid grid, MazePosition start, MazePosition end)
+	{
+		// This method will generate the path from start to end, ignoring walls and such
+		// We will use the data from this to dig afterwards, ensuring the connections
+
 		// Create the starting tile for our navigation
 		MazeNavigationTile startingTile = new MazeNavigationTile
 		{
@@ -227,27 +275,19 @@ public static class MazeNavigation
 			if (grid.IsMoveLegal(direction, current.position))
 			{
 				MazePosition possiblePosition = current.position;
-				MazeTile tile = grid[possiblePosition];
 				// Move in the direction to add the new tile
 				possiblePosition.Move(direction);
-				// If the tile is empty we discard it
-				if (tile.Value == 0)
-					continue;
 				// If we have a parent we already went through an iteration
 				// So if we try to move towards our parent -- don't
 				if (current.parent != null && current.parent.position == possiblePosition)
 					continue;
-				// We need to also check if we can move in that direction
-				if (tile.Entrances.Contains(direction))
+				// Add the tile to the possibilities
+				possibleTiles.Add(new MazeNavigationTile
 				{
-					// Add the tile to the possibilities
-					possibleTiles.Add(new MazeNavigationTile
-					{
-						position = possiblePosition,
-						cost = current.cost + 1,
-						parent = current,
-					});
-				}
+					position = possiblePosition,
+					cost = current.cost + 1,
+					parent = current,
+				});
 			}
 		}
 		// Calculate the distance for each tile
@@ -255,4 +295,30 @@ public static class MazeNavigation
 		// Return whatever we found
 		return possibleTiles;
 	}
+
+	public static IEnumerable<MazePosition> GetDisconnectedPositions(MazeGrid grid, int[,] map)
+	{
+		for (int x = 0; x < grid.Depth; x++)
+		{
+			for (int y = 0; y < grid.Width; y++)
+			{
+				if (map[x, y] < 0 && grid[x, y].Value > 0)
+					yield return new MazePosition(x, y);
+			}
+		}
+	}
+
+	public static IEnumerable<MazePosition> GetRecursivePath(this MazeNavigationTile path)
+	{
+		MazeNavigationTile tile = path;
+		// Iterate until we find a null
+		while (tile != null)
+		{
+			// Return the position
+			yield return tile.position;
+			// Update the tile to its parent
+			tile = tile.parent;
+		}
+	}
+	#endregion
 }

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq;
 using System.Text;
 using TMPro;
 using UnityEngine;
@@ -98,14 +99,10 @@ public class MazeGridViewer : MonoBehaviour
 					colorFormat = "<color=blue>{0}</color>";
 				else
 				{
-					// If the grid is generated and we reach the spawn then change the color
-					if (_grid.IsGenerated && _grid[x, y].Value != 0)
-					{
-						if (MazeNavigation.EnsureNavigation(_grid, new MazePosition(x, y), _grid.Spawn) != null)
-							colorFormat = "<color=green>{0}</color>";
-						else
-							colorFormat = "<color=red>{0}</color>";
-					}
+					if (grid.IsOnIntegrity(new MazePosition(x, y)))
+						colorFormat = "<color=green>{0}</color>";
+					else if (_grid[x, y].Value != 0)
+						colorFormat = "<color=red>{0}</color>";
 				}
 				layout.AppendFormat(colorFormat, _grid[x, y]);
 			}

@@ -5,9 +5,6 @@ using UnityEngine;
 
 public class MazeGrid
 {
-	public const int MAX_SIZE = 30;
-	public const int MAX_DISCREPANCY = 10;
-
 	private int _hash;
 	private string _seed;
 	private int _width, _depth;
@@ -16,6 +13,7 @@ public class MazeGrid
 	private bool _allowOverfill;
 	private bool _verifyPathIntegrity;
 
+	private int[,] _map;
 	private MazeTile[,] _grid;
 	private MazePosition _spawn;
 
@@ -60,32 +58,17 @@ public class MazeGrid
 		_hash = MazeUtilities.ComputeSeed(seed);
 		// Configure the size of the grid
 		// Depth is the x-axis
-		_depth = depth > MAX_SIZE ? MAX_SIZE : depth;
+		_depth = depth;
 		// Width is the y-axis
-		_width = width > MAX_SIZE ? MAX_SIZE : width;
-		// Ensure the sizes are OK
-		// We must apply some limitations in order to check the path integrity
-		if (Mathf.Abs(_depth - _width) >= MAX_DISCREPANCY)
-		{
-			// We round up to the nearest multiple of MAX_DISCREPANCY / 2
-			// Also make sure we're still within MAX_SIZE
-			if (_depth > _width)
-			{
-				_width = MathUtilities.RoundNearest(_width + MAX_DISCREPANCY + 1, MAX_DISCREPANCY / 2);
-				if (_width > MAX_SIZE) _width = MAX_SIZE;
-			}
-			else
-			{
-				_depth = MathUtilities.RoundNearest(_depth + MAX_DISCREPANCY + 1, MAX_DISCREPANCY / 2);
-				if (_depth > MAX_SIZE) _depth = MAX_SIZE;
-			}
-		}
+		_width = width;
 		// Setup the filling logic
 		_fillRatio = fillRatio;
 		_allowOverfill = allowOverfilling;
 		_verifyPathIntegrity = true;
 		// Initialize the grid
 		_grid = new MazeTile[_depth, _width];
+		// Initialize an empty integrity map
+		_map = MazeUtilities.Matrix<int>(_depth, _width, -1);
 		// Setup the random instance
 		Random.InitState(_hash);
 	}
@@ -153,77 +136,45 @@ public class MazeGrid
 
 	private IEnumerator VerifyIntegrity()
 	{
-		// Grab all valid tiles to evaluate
-		IEnumerable<MazePosition> tiles = _grid.ToPositions()
-			.OrderByDescending<MazePosition, int>(position => MazePosition.Distance(position, _spawn))
-			.Where<MazePosition>(position => _grid.GetTileAt(position).Value != 0);
-		// How many tiles do we have to evaluate?
-		int total = tiles.Count<MazePosition>();
-		// We need to evaluate every tile
-		while (tiles.Any<MazePosition>())
+		while (true)
 		{
-			// Instantiate a list of validated tiles
-			List<MazePosition> validated = new List<MazePosition>();
-			// Only attempt one fix per iteration
-			bool changed = false;
-			foreach (MazePosition position in tiles)
+			// Generate the integrity map
+			_map = MazeNavigation.GetIntegrityMap(this, _spawn);
+			// Find any tile that is disconnected
+			IEnumerable<MazePosition> leftovers =
+				MazeNavigation.GetDisconnectedPositions(this, _map);
+			if (leftovers.Any<MazePosition>())
 			{
-				// If we already validated this position then skip
-				if (validated.Contains(position)) continue;
-				// Run the pathing algorithm to see if this position can get to the spawn
-				MazeNavigationTile evaluated = MazeNavigation.EnsureNavigation(this, position, _spawn);
-				if (evaluated == null)
+				// Get the closest position
+				MazePosition closest = leftovers
+					.OrderBy<MazePosition, int>(position => MazePosition.Distance(position, _spawn))
+					.First<MazePosition>();
+				// Calculate the navigation path
+				MazeNavigationTile path = MazeNavigation.GetNavigationPath(this, closest, _spawn);
+				// Get all the positions we visited
+				MazePosition[] points = path.GetRecursivePath().ToArray<MazePosition>();
+				for (int index = 1; index < points.Length; index++)
 				{
-					// We couldn't find a path
-					if (!changed)
-					{
-						// If we haven't already attempted a fix in this iteration do it
-						MazeTile tile = _grid.GetTileAt(position);
-						// Ignore empty tiles
-						if (tile.Value == 0)
-							continue;
-						// We iterate through all its possible walls
-						foreach (MazeDirection direction in tile.Walls)
-						{
-							// On the first legal move we can go
-							if (IsMoveLegal(direction, position))
-							{
-								// Get the next position
-								MazePosition next = MazePosition.Move(position, direction);
-								// After we dig we just move onto the next tile to evaluate
-								_grid.Dig(position, next, direction);
-								// But we actually append the one we just got
-								tiles.Append<MazePosition>(next);
-								// Notify the change to invalidate the data
-								changed = true;
-								break;
-							}
-						}
-					}
+					MazePosition pointA = points[index - 1];
+					MazePosition pointB = points[index];
+					// Calculate the direction
+					MazeDirection direction = MazePosition.GetDirection(pointA, pointB);
+					// And apply the dig along the path
+					_grid.Dig(pointA, pointB, direction);
 				}
-				else
-				{
-					// We have a path, so we iterate backwards to remove the tiles
-					MazeNavigationTile valid = evaluated;
-					do
-					{
-						validated.Add(valid.position);
-						// Update the tile to its parent
-						valid = valid.parent;
-						// Iterate until we find a null
-					} while (valid != null);
-				}
-				// This is quite heavy, so we might wanna offset it
-				yield return null;
+				// We only worked from the closest point, but we don't know if the grid is valid now
+				// So we do nothing else and move to the next iteration
 			}
-			// Before moving to the next iteration we need to remove the validated tiles
-			tiles = tiles.Except<MazePosition>(validated);
+			else
+			{
+				// We have no more points to validate, so we can stop the iteration
+				yield break;
+			}
 		}
-		yield return null;
 	}
 
 	private bool HasFreeTiles()
-		=> _grid.Flatten().Any<MazeTile>(tile => tile.Value == 0);
+		=> _grid.Flatten<MazeTile>().Any<MazeTile>(tile => tile.Value == 0);
 	private MazePosition RandomPosition()
 	{
 		if (HasFreeTiles())
@@ -248,6 +199,8 @@ public class MazeGrid
 		=> position.x * _depth + position.y;
 	public MazePosition IndexToPosition(int index)
 		=> new MazePosition(index / _depth, index % _depth);
+	public bool IsOnIntegrity(MazePosition position)
+		=> !(_map[position.x, position.y] < 0);
 
 	// These combinations can result in a tunnel
 	private static readonly MazeTile[] TUNNEL_ROOMS = new MazeTile[]

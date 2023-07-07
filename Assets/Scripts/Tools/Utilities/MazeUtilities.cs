@@ -103,7 +103,7 @@ public static class MazeUtilities
 			return false;
 		if (direction == MazeDirection.West && currentPosition.y == 0)
 			return false;
-		if (direction == MazeDirection.East && currentPosition.y == grid.GetLength(0) - 1)
+		if (direction == MazeDirection.East && currentPosition.y == grid.GetLength(1) - 1)
 			return false;
 		return true;
 	}
@@ -140,13 +140,18 @@ public static class MazeUtilities
 	}
 
 	// Useful for LINQ queries
-	public static IEnumerable<MazeTile> Flatten(this MazeTile[,] grid)
+	public static IEnumerable<T> Flatten<T>(this T[,] matrix)
 	{
-		foreach (MazeTile tile in grid) yield return tile;
+		foreach (T index in matrix) yield return index;
 	}
-	public static IEnumerable<MazeRoom> Flatten(this MazeRoom[,] grid)
+
+	public static T[,] Matrix<T>(int size_a, int size_b, T defaultValue) where T : struct
 	{
-		foreach (MazeRoom room in grid) yield return room;
+		T[,] matrix = new T[size_a, size_b];
+		for(int a = 0; a < size_a; a++)
+			for(int b = 0; b < size_b; b++)
+				matrix[a, b] = defaultValue;
+		return matrix;
 	}
 
 	public static IEnumerable<MazePosition> ToPositions(this MazeTile[,] grid)

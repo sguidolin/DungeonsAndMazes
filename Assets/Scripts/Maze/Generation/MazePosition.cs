@@ -34,12 +34,26 @@ public struct MazePosition
 	public static MazePosition Move(MazePosition currentPosition, MazeDirection direction)
 	{
 		MazePosition nextPosition = currentPosition;
-		//if (MazeGrid.Instance.IsMoveLegal(direction, nextPosition))
 		nextPosition.Move(direction);
 		return nextPosition;
 	}
 	public static int Distance(MazePosition from, MazePosition to)
 		=> Mathf.Abs(from.x - to.x) + Mathf.Abs(from.y - to.y);
+
+	public static MazeDirection GetDirection(MazePosition from, MazePosition to)
+	{
+		// Use the movement logic to calculate by iterating every direction
+		foreach (MazeDirection direction in MazeTile.Cardinals)
+		{
+			// We try to move in a direction
+			MazePosition possible = from;
+			possible.Move(direction);
+			// If we got where we wanted to go we return the direction
+			if (possible == to) return direction;
+		}
+		// As a worst case we return none
+		return MazeDirection.None;
+	}
 
 	public Vector3 ToWorldPosition(float size) => new Vector3(-x * size, 0f, -y * size);
 

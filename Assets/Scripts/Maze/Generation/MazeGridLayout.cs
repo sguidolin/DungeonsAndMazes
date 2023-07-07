@@ -222,7 +222,7 @@ public class MazeGridLayout : MonoBehaviour
 			// Rule is: room not empty (0), no events, not a tunnel
 			// Those are special rooms that are not considered available
 			isValid = result != null && result.Tile.Value > 0 && result.Event == null && !result.IsTunnel && result != GetSpawnRoom();
-			if (forceHiddenRoom && _rooms.Flatten().Any<MazeRoom>(room => !room.IsVisible))
+			if (forceHiddenRoom && _rooms.Flatten<MazeRoom>().Any<MazeRoom>(room => !room.IsVisible))
 				isValid = isValid && !result.IsVisible;
 		}
 		return result;
@@ -242,7 +242,7 @@ public class MazeGridLayout : MonoBehaviour
 		=> _rooms[x, y];
 
 	public IEnumerable<MazeRoom> GetEvents<T>() where T : MazeEvent
-		=> _rooms.Flatten().Where<MazeRoom>(room => room.Event != null && room.Event.GetType() == typeof(T));
+		=> _rooms.Flatten<MazeRoom>().Where<MazeRoom>(room => room.Event != null && room.Event.GetType() == typeof(T));
 
 	public bool HasEvent(MazePosition position)
 		=> GetRoomAt(position).Event != null;
@@ -265,7 +265,7 @@ public class MazeGridLayout : MonoBehaviour
 		if (IsGenerated)
 		{
 			// Display all rooms for debug purposes
-			foreach (MazeRoom room in _rooms.Flatten().Where<MazeRoom>(r => r != null))
+			foreach (MazeRoom room in _rooms.Flatten<MazeRoom>().Where<MazeRoom>(r => r != null))
 				StartCoroutine(room.RevealRoom(0f));
 		}
 	}
