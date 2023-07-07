@@ -8,16 +8,17 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public class MazeGridViewer : MonoBehaviour
 {
+	public bool stepByStep = false;
+
 	[Header("UI Settings")]
-	public TMP_InputField _seedInput;
+	public TMP_InputField seedInput;
 
-	public Slider _depthSlider;
-	public Slider _widthSlider;
-	public Slider _ratioSlider;
-	public Toggle _overfillToggle;
-	public Button _generateCaller;
+	public Slider depthSlider;
+	public Slider widthSlider;
+	public Slider ratioSlider;
+	public Button generateCaller;
 
-	public TextMeshProUGUI _display;
+	public TextMeshProUGUI display;
 
 	private MazeGrid _grid;
 	private bool _isGenerating = false;
@@ -25,13 +26,12 @@ public class MazeGridViewer : MonoBehaviour
 	void Awake()
 	{
 		enabled =
-			_seedInput != null &&
-			_depthSlider != null &&
-			_widthSlider != null &&
-			_ratioSlider != null &&
-			_overfillToggle != null &&
-			_generateCaller != null &&
-			_display != null;
+			seedInput != null &&
+			depthSlider != null &&
+			widthSlider != null &&
+			ratioSlider != null &&
+			generateCaller != null &&
+			display != null;
 	}
 
 	void Start() => Generate();
@@ -39,7 +39,7 @@ public class MazeGridViewer : MonoBehaviour
 	public void Generate()
 	{
 		if (_isGenerating) return;
-		string seed = _seedInput.text;
+		string seed = seedInput.text;
 		if (string.IsNullOrEmpty(seed))
 			seed = RandomSeedGenerator.NewSeed();
 		StartCoroutine(BuildDungeon(seed));
@@ -49,21 +49,21 @@ public class MazeGridViewer : MonoBehaviour
 	{
 		if (_isGenerating) yield break;
 
-		_generateCaller.interactable = false;
+		generateCaller.interactable = false;
 
-		int depth = (int)_depthSlider.value;
-		int width = (int)_widthSlider.value;
-		float fillRatio = _ratioSlider.value;
-		bool allowOverfilling = _overfillToggle.isOn;
+		int depth = (int)depthSlider.value;
+		int width = (int)widthSlider.value;
+		float fillRatio = ratioSlider.value;
 
 		_isGenerating = true;
-		_display.text = "Generating...";
+		display.text = "Generating...";
 
-		_grid = new MazeGrid(seed, depth, width, fillRatio, allowOverfilling);
+		_grid = new MazeGrid(seed, depth, width, fillRatio);
+
 		if (_grid.Tiles > 0)
 		{
-			float startTime = Time.time;
-			IEnumerator operation = _grid.Generate();
+			System.DateTime startTime = System.DateTime.Now;
+			IEnumerator operation = _grid.Generate(stepByStep);
 			while (operation.MoveNext())
 			{
 				// Handle printing inside method for step-by-step
@@ -74,16 +74,16 @@ public class MazeGridViewer : MonoBehaviour
 			PrintDungeon(startTime, _grid);
 		}
 		else
-			_display.text = "Nothing to see here.";
+			display.text = "Nothing to see here.";
 		// Finished generating
 		_isGenerating = false;
 
-		_generateCaller.interactable = true;
+		generateCaller.interactable = true;
 	}
 
-	private void PrintDungeon(float started, MazeGrid grid)
+	private void PrintDungeon(System.DateTime started, MazeGrid grid)
 	{
-		float elapsed = Time.time - started;
+		float elapsed = (float)((System.DateTime.Now - started).TotalSeconds);
 		byte minutes = (byte)Mathf.FloorToInt(elapsed / 60);
 		byte seconds = (byte)Mathf.FloorToInt(elapsed % 60);
 		StringBuilder layout = new StringBuilder();
@@ -97,13 +97,11 @@ public class MazeGridViewer : MonoBehaviour
 				string colorFormat = "{0}";
 				if (_grid.Spawn == new MazePosition(x, y))
 					colorFormat = "<color=blue>{0}</color>";
-				else
-				{
-					if (grid.IsOnIntegrity(new MazePosition(x, y)))
-						colorFormat = "<color=green>{0}</color>";
-					else if (_grid[x, y].Value != 0)
-						colorFormat = "<color=red>{0}</color>";
-				}
+				//else
+				//{
+				//	if (!grid.IsOnIntegrity(new MazePosition(x, y)) && _grid[x, y].Value != 0)
+				//		colorFormat = "<color=red>{0}</color>";
+				//}
 				layout.AppendFormat(colorFormat, _grid[x, y]);
 			}
 		}
@@ -111,6 +109,6 @@ public class MazeGridViewer : MonoBehaviour
 			layout.AppendLine($"\n\nGenerated in {Mathf.RoundToInt(elapsed)} seconds. Laid {_grid.Tiled} ({((float)_grid.Tiled / (float)_grid.Capacity).ToString("P2")}) tiles.");
 		else
 			layout.AppendLine($"\n\nGenerating... {_grid.Tiled} out of {_grid.Tiles}. Elapsed: {string.Format("{0:00}:{1:00}", minutes, seconds)}");
-		if (_display) _display.text = layout.ToString();
+		if (display) display.text = layout.ToString();
 	}
 }

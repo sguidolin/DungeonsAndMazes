@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using UnityEngine;
 
@@ -7,11 +8,6 @@ public class MazeWorker
 	private const float BIAS_FACTOR = 0.215f;
 	private const float ADVENTUROUS_FACTOR = 1.55f;
 	private const float SECOND_WIND_CHANCE = 0.25f;
-
-	private readonly MazeDirection[] WORK_CHOICES = new MazeDirection[]
-	{
-		MazeDirection.North, MazeDirection.South, MazeDirection.West, MazeDirection.East
-	};
 
 	private MazePosition _position;
 	private int _lifespan;
@@ -36,7 +32,7 @@ public class MazeWorker
 		// Is our worker seeking to build new tunnels?
 		_adventurous = (Random.value * ADVENTUROUS_FACTOR) + 0.025f;
 		// Initialize the choices the worker can make
-		_choices = new List<MazeDirection>(WORK_CHOICES);
+		_choices = new List<MazeDirection>(MazeTile.Cardinals);
 		// Bias is the chance that our worker will dislike a random direction
 		while (Random.value < _bias)
 		{
@@ -49,27 +45,11 @@ public class MazeWorker
 		}
 	}
 
-	private bool IsLegalMove(MazeDirection direction, int minDepth, int maxDepth, int minWidth, int maxWidth)
-	{
-		// Evaluate the border cases
-		if (direction == MazeDirection.North && _position.x == minDepth)
-			return false;
-		if (direction == MazeDirection.South && _position.x == maxDepth)
-			return false;
-		if (direction == MazeDirection.West && _position.y == minWidth)
-			return false;
-		if (direction == MazeDirection.East && _position.y == maxWidth)
-			return false;
-		return true;
-	}
-	private bool HasLegalMoves(List<MazeDirection> choices, int minDepth, int maxDepth, int minWidth, int maxWidth)
-		=> choices.Any<MazeDirection>(dir => IsLegalMove(dir, minDepth, maxDepth, minWidth, maxWidth));
+	private bool HasLegalMoves(List<MazeDirection> choices, MazeGrid grid)
+		=> choices.Any<MazeDirection>(direction => grid.IsMoveLegal(direction, _position));
 
 	public MazeShift Work(MazeGrid locale)
 	{
-		// Set up boundaries data
-		int minDepth = 0, maxDepth = locale.Depth - 1, minWidth = 0, maxWidth = locale.Width - 1;
-
 		bool isMoveValid = false;
 		MazeDirection direction = 0;
 		MazePosition startPosition = _position;
@@ -79,12 +59,12 @@ public class MazeWorker
 		while (!isMoveValid)
 		{
 			// Make sure the worker has legal choices to make
-			if (HasLegalMoves(possibleChoices, minDepth, maxDepth, minWidth, maxWidth))
+			if (HasLegalMoves(possibleChoices, locale))
 			{
 				// Let the worker pick a direction
 				direction = possibleChoices[Random.Range(0, possibleChoices.Count)];
 				// Check validity of the move we picked
-				isMoveValid = IsLegalMove(direction, minDepth, maxDepth, minWidth, maxWidth);
+				isMoveValid = locale.IsMoveLegal(direction, _position);
 				// If we can move, we need to evaluate if we actually want to go through
 				// This is based on the number of holes that have been dug already in the next cell
 				if (isMoveValid)
@@ -140,4 +120,10 @@ public class MazeWorker
 			heading = direction
 		};
 	}
+
+	public void ForceRetirement()
+		=> _lifespan = 0;
+
+	public static int RandomLifespan(int size)
+		=> Random.Range(size / 2, size + 1);
 }

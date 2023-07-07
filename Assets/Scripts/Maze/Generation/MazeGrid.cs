@@ -10,8 +10,6 @@ public class MazeGrid
 	private int _width, _depth;
 
 	private float _fillRatio;
-	private bool _allowOverfill;
-	private bool _verifyPathIntegrity;
 
 	private int[,] _map;
 	private MazeTile[,] _grid;
@@ -45,13 +43,17 @@ public class MazeGrid
 		}
 	}
 
+	// Calculate the average size of the grid
+	// This will be used in the random for the lifespan of the workers
+	public int Size => (_width + _depth) / 2;
+
 	public bool IsFilled => Tiled >= Tiles;
 	public bool IsGenerated { get; private set; } = false;
 
 	public MazeTile this[int x, int y] => _grid[x, y];
 	public MazeTile this[MazePosition p] => _grid[p.x, p.y];
 
-	public MazeGrid(string seed, int depth, int width, float fillRatio = 0.5f, bool allowOverfilling = false)
+	public MazeGrid(string seed, int depth, int width, float fillRatio = 0.5f)
 	{
 		_seed = seed;
 		// Calculate the hash
@@ -63,8 +65,6 @@ public class MazeGrid
 		_width = width;
 		// Setup the filling logic
 		_fillRatio = fillRatio;
-		_allowOverfill = allowOverfilling;
-		_verifyPathIntegrity = true;
 		// Initialize the grid
 		_grid = new MazeTile[_depth, _width];
 		// Initialize an empty integrity map
@@ -73,19 +73,16 @@ public class MazeGrid
 		Random.InitState(_hash);
 	}
 
-	public IEnumerator Generate()
+	public IEnumerator Generate(bool stepByStep = false)
 	{
 		// Flag as process started
 		IsGenerated = false;
-		// Calculate the average size of the grid
-		// This will be used in the random for the lifespan of the workers
-		int size = (_width + _depth) / 2;
 		// Instantiate a list of workers
 		List<MazeWorker> workers = new List<MazeWorker>();
 		// Select the spawn position
 		_spawn = RandomPosition();
 		// Scale the number of max workers to the size by a range from 2 to 4
-		int maxWorkers = size / Random.Range(2, 5);
+		int maxWorkers = Size / Random.Range(2, 5);
 		// Use a flag to ensure a drop in the spawn
 		bool spawned = false;
 
@@ -104,7 +101,7 @@ public class MazeGrid
 						// Ensure that the spawn point has a worker
 						MazePosition deploy = spawned ? RandomPosition() : _spawn;
 						// Lifespan is decided randomly between half-size and size
-						workers.Add(new MazeWorker(Random.Range(size / 2, size + 1), deploy));
+						workers.Add(new MazeWorker(MazeWorker.RandomLifespan(Size), deploy));
 						// Flag that at least one worker was dropped here
 						spawned = true;
 					}
@@ -119,22 +116,21 @@ public class MazeGrid
 				// Dig the result of our worker's shift
 				_grid.Dig(shift);
 				// After a worker has completed their shift, check if we should keep going
-				// Since we might not allow overfilling then we need to stop when the quota is met
-				if (!_allowOverfill && IsFilled) break;
+				// As soon as the quota is met we stop
+				if (IsFilled) break;
 			}
 			// Finally, let those who are done retire by updating our list
 			workers = workers.Where<MazeWorker>(worker => !worker.Retired).ToList<MazeWorker>();
+			// Delay operation to give a nicer effect if requested
+			if (stepByStep) yield return null;
 		}
-		if (_verifyPathIntegrity)
-		{
-			// After we filled, we need to ensure that every point is connected to the spawn
-			yield return VerifyIntegrity();
-		}
+		// After we filled, we need to ensure that every point is connected to the spawn
+		yield return VerifyIntegrity(stepByStep);
 		// Update the process status
 		IsGenerated = true;
 	}
 
-	private IEnumerator VerifyIntegrity()
+	private IEnumerator VerifyIntegrity(bool stepByStep)
 	{
 		while (true)
 		{
@@ -161,9 +157,33 @@ public class MazeGrid
 					MazeDirection direction = MazePosition.GetDirection(pointA, pointB);
 					// And apply the dig along the path
 					_grid.Dig(pointA, pointB, direction);
+
+					// Calculate a chance to spawn a worker to mess up our path
+					float workerChance = 1f - (1f / (points.Length - index));
+					// Multiply the random value to scale it and lower the odds
+					if (Random.value * 0.88f < workerChance)
+					{
+						// Drop a new worker in our starting point
+						MazeWorker worker = new MazeWorker(
+							MazeWorker.RandomLifespan(Size) / points.Length, pointA
+						);
+						// Let it work to retirement
+						while (!worker.Retired)
+						{
+							MazeShift shift = worker.Work(this);
+							// If we invalidated the shift then ignore it
+							if (!shift.isValid) continue;
+							// Dig the result of our worker's shift
+							_grid.Dig(shift);
+
+							// If the worker landed on our tile then force its retirement
+							if (worker.Position == pointB) worker.ForceRetirement();
+						}
+					}
 				}
 				// We only worked from the closest point, but we don't know if the grid is valid now
 				// So we do nothing else and move to the next iteration
+				if (stepByStep) yield return null;
 			}
 			else
 			{

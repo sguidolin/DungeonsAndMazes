@@ -2,7 +2,6 @@ public class MazeNavigationTile
 {
 	public int cost;
 	public int distance;
-	//public bool walkable;
 	public MazePosition position;
 	public MazeNavigationTile parent;
 

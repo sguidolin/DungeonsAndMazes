@@ -10,18 +10,16 @@ public class MazeGridLayout : MonoBehaviour
 	[SerializeField]
 	private string _seed;
 
-	[SerializeField, Range(5, 30)]
+	[SerializeField, Range(5, 50)]
 	private int _depth = 20;
-	[SerializeField, Range(5, 30)]
+	[SerializeField, Range(5, 50)]
 	private int _width = 20;
 	[SerializeField, Range(0.25f, 1f)]
 	private float _fillRatio = 0.5f;
 	[SerializeField]
-	private bool _allowOverfilling = false;
+	private bool _allowTunnels = true;
 	[SerializeField, Range(0f, 1f)]
 	private float _tunnelChance = 0.25f;
-	[SerializeField]
-	private bool _allowTunnels = true;
 
 	[Space(10)]
 	[SerializeField]
@@ -65,7 +63,7 @@ public class MazeGridLayout : MonoBehaviour
 		if (string.IsNullOrEmpty(_seed))
 			_seed = RandomSeedGenerator.NewSeed();
 		// Create instance of the grid
-		_grid = new MazeGrid(_seed, _depth, _width, _fillRatio, _allowOverfilling);
+		_grid = new MazeGrid(_seed, _depth, _width, _fillRatio);
 		// Instantiate matrix for rooms
 		_rooms = new MazeRoom[_depth, _width];
 		// Generate the maze
