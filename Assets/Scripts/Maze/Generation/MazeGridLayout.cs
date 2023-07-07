@@ -140,6 +140,8 @@ public class MazeGridLayout : MonoBehaviour
 				if (blueprint == null) throw new System.Exception("Couldn't find a match for the blueprint.");
 				// Now we instantiate our GameObject and operate on it
 				GameObject instance = Instantiate(blueprint.gameObject, transform);
+				// Give a better name to the tile for the hierarchy
+				instance.name = $"{x}_{y}_{blueprint.gameObject.name}";
 				// We have our instance, so we're going to fetch the MazeRoom from it
 				MazeRoom room = instance.GetComponent<MazeRoom>();
 				// Set the position for the room
