@@ -29,12 +29,30 @@ public class ProjectileController : ActorController
 		while (_isAlive)
 		{
 			yield return Move(direction.ToVector2());
-			// TODO: We need to evaluate if we hit the player or a monster
-			// If we hit anything we should handle it and also make some other animation?
+			// Check if we hit a player or a monster
 			if (MazeMaster.Instance.PlayerPositions.Any<MazePosition>(player => player == _position))
-				Debug.Log("Player hit!");
+			{
+				// Projectile hit the player, call the on death event
+				MazeMaster.Instance.ActivePlayer.OnDeath("Dead");
+				// And then trigger the game over
+				MazeMaster.Instance.OnGameEnded(false);
+				// Force exit
+				IsTraveling = false;
+				yield break;
+			}
 			else if (MazeMaster.Instance.MonsterPositions.Any<MazePosition>(monster => monster == _position))
-				Debug.Log("Monster hit!");
+			{
+				MazeRoom monsterRoom = MazeGrid.Instance.GetRoomAt(_position);
+				// Destroy the event
+				monsterRoom.SetEvent(null);
+				// Do a little dance, we killed the monster
+				MazeMaster.Instance.ActivePlayer.OnVictory();
+				// Trigger the victory screen
+				MazeMaster.Instance.OnGameEnded(true);
+				// Force exit
+				IsTraveling = false;
+				yield break;
+			}
 
 			direction = MazeUtilities.RotationToDirection(transform.rotation);
 			// Need to figure out how to update orientation

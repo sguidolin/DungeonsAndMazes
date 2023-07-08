@@ -48,10 +48,13 @@ public class MazeGridLayout : MonoBehaviour
 	private MazeGrid _grid;
 	private MazeRoom[,] _rooms;
 
+	private IEnumerable<MazeRoom> _Rooms
+		=> _rooms.Flatten<MazeRoom>().Where<MazeRoom>(room => room != null);
+
 	public string Seed => _seed;
 	// Calculate the % that has been revealed
 	public float Revealed =>
-		((float)_rooms.Flatten<MazeRoom>().Count<MazeRoom>(room => room.IsVisible) / (float)_grid.Tiled) * 100f;
+		((float)_Rooms.Count<MazeRoom>(room => room.IsVisible) / (float)_grid.Tiled) * 100f;
 	public bool IsGenerated { get; private set; } = false;
 
 	void Awake()
@@ -223,13 +226,14 @@ public class MazeGridLayout : MonoBehaviour
 		bool isValid = false;
 		while (!isValid)
 		{
-			// TODO: This event will need to ensure that it's not a room with a player
 			result = _rooms[Random.Range(0, _grid.Depth - 1), Random.Range(0, _grid.Width - 1)];
 			// Ensure that result is not null, since we're not spawning walls
 			// Rule is: room not empty (0), no events, not a tunnel
 			// Those are special rooms that are not considered available
-			isValid = result != null && result.Tile.Value > 0 && result.Event == null && !result.IsTunnel && result != GetSpawnRoom();
-			if (forceHiddenRoom && _rooms.Flatten<MazeRoom>().Any<MazeRoom>(room => !room.IsVisible))
+			// Also make sure we keep the spawn free, and the player isn't in the room
+			isValid = result != null && result.Tile.Value > 0 && result.Event == null && !result.IsTunnel && result != GetSpawnRoom()
+				&& !MazeMaster.Instance.PlayerPositions.Contains<MazePosition>(result.Position);
+			if (forceHiddenRoom && _Rooms.Any<MazeRoom>(room => !room.IsVisible))
 				isValid = isValid && !result.IsVisible;
 		}
 		return result;
@@ -237,7 +241,7 @@ public class MazeGridLayout : MonoBehaviour
 
 	public MazeRoom FindRoomAt(Vector3 position)
 	{
-		foreach (MazeRoom room in _rooms)
+		foreach (MazeRoom room in _Rooms)
 			if (room.ContainsPosition(position))
 				return room;
 		return null;
@@ -249,7 +253,7 @@ public class MazeGridLayout : MonoBehaviour
 		=> _rooms[x, y];
 
 	public IEnumerable<MazeRoom> GetEvents<T>() where T : MazeEvent
-		=> _rooms.Flatten<MazeRoom>().Where<MazeRoom>(room => room.Event != null && room.Event.GetType() == typeof(T));
+		=> _Rooms.Where<MazeRoom>(room => room.Event != null && room.Event.GetType() == typeof(T));
 
 	public bool HasEvent(MazePosition position)
 		=> GetRoomAt(position).Event != null;
@@ -272,7 +276,7 @@ public class MazeGridLayout : MonoBehaviour
 		if (IsGenerated)
 		{
 			// Display all rooms for debug purposes
-			foreach (MazeRoom room in _rooms.Flatten<MazeRoom>().Where<MazeRoom>(r => r != null))
+			foreach (MazeRoom room in _Rooms.Where<MazeRoom>(r => r != null))
 				StartCoroutine(room.RevealRoom(0f));
 		}
 	}

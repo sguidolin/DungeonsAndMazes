@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -54,6 +55,8 @@ public class HeroController : ActorController
 		_isAlive = true;
 		// Setup the ammunitions text
 		_ammunitions.text = $"{_projectilesAvailable}/{_projectilesAvailable}";
+		// Check for events close by
+		LookForEventsInProximity();
 	}
 
 	void Update()
@@ -109,19 +112,15 @@ public class HeroController : ActorController
 				switch (@event)
 				{
 					case MazePortal portal:
-						//_eventsForecast.TrySetTrigger("Teleport");
 						triggers.Add("Teleport");
 						break;
 					case MazeMonster monster:
-						//_eventsForecast.TrySetTrigger("Monster");
 						triggers.Add("Monster");
 						break;
 					case MazeDeathPit deathPit:
-						//_eventsForecast.TrySetTrigger("Pit");
 						triggers.Add("Pit");
 						break;
 				}
-				// This should be done when the turn starts
 				//Debug.Log($"{Position} Event detected in proximity: {@event.GetType()}");
 			}
 		}
@@ -155,9 +154,9 @@ public class HeroController : ActorController
 		yield return null;
 	}
 
-	IEnumerator Shoot(Vector2 aim)
+	IEnumerator Shoot(Vector2 input)
 	{
-		if (aim != Vector2.zero)
+		if (input != Vector2.zero)
 		{
 			using (this.Busy())
 			{
@@ -168,7 +167,7 @@ public class HeroController : ActorController
 				ProjectileController projectile = instance.GetComponent<ProjectileController>();
 				// Set the starting values
 				projectile.SetPosition(Position);
-				projectile.direction = aim.ToDirection();
+				projectile.direction = input.ToDirection();
 				// Force override the view of this element
 				_ammunitions.gameObject.SetActive(true);
 				_ammunitions.text = string.Empty;
@@ -192,11 +191,36 @@ public class HeroController : ActorController
 				_ammunitions.text = $"{_projectilesAvailable - _projectilesShot}/{_projectilesAvailable}";
 				// Destroy the arrow instance since it's done
 				Destroy(instance);
+
+				if (_projectilesAvailable - _projectilesShot <= 0)
+				{
+					if (MazeMaster.Instance.MonsterPositions.Any<MazePosition>())
+					{
+						// Trigger a game over
+						MazeMaster.Instance.OnGameEnded(false);
+					}
+				}
 			}
 			// Pass the turn
 			MazeMaster.Instance.OnTurnCompleted();
 		}
 		yield return null;
+	}
+
+	public override void OnDeath(string trigger = "")
+	{
+		// Apply a lock to the player
+		OnLockApplied();
+		// Call the base method
+		base.OnDeath(trigger);
+	}
+
+	public void OnVictory()
+	{
+		// Apply a lock to the player
+		OnLockApplied();
+		// Put it into cheer mode
+		SetAnimatorTrigger("Cheer");
 	}
 
 	#region IBusyResource Implementation
@@ -206,6 +230,7 @@ public class HeroController : ActorController
 		IsBusy = true;
 
 		// Hide the UI elements while locked
+		_eventsForecast.gameObject.SetActive(false);
 		_ammunitions.gameObject.SetActive(false);
 		_compass?.SetActive(false);
 		// Flag the actor as moving
@@ -217,12 +242,14 @@ public class HeroController : ActorController
 		// Free up the actor on release
 		_isMoving = false;
 		// Enable whatever else if the actor is still alive
-		if (_isAlive)
+		if (_isAlive && !GameManager.Instance.gameOver)
 		{
 			// First thing is the compass
 			_compass?.SetActive(true);
 			// Then the ammonitions
 			_ammunitions.gameObject.SetActive(true);
+			// Then the forecast
+			_eventsForecast.gameObject.SetActive(true);
 		}
 
 		// Release the lock

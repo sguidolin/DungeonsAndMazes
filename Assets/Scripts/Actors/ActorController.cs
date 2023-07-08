@@ -52,7 +52,7 @@ public abstract class ActorController : MonoBehaviour, IBusyResource
 	public void SetAnimatorFlag(string name, bool value)
 		=> _animator.TrySetBool(name, value);
 
-	public void OnDeath(string trigger = "")
+	public virtual void OnDeath(string trigger = "")
 	{
 		_isAlive = false;
 		// We can specify a trigger to show the animation

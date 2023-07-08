@@ -25,10 +25,19 @@ public class MazeMaster : MonoBehaviour
 	[SerializeField]
 	private Canvas _statusUI;
 	[SerializeField]
-	private Canvas _reportUI;
+	private GameStatusController _reportUI;
 
 	private int _activeIndex = 0;
+	/*
+	 * TODO: A list allows us to handle multiple players
+	 * Review the logic for winning/losing a game
+	 * Maybe add an event log
+	 * All that would allow for local multiplayer
+	 */
 	private List<HeroController> _players;
+
+	public HeroController ActivePlayer
+		=> _players[_activeIndex];
 
 	public IEnumerable<MazePosition> PlayerPositions
 		=> _players.Select<HeroController, MazePosition>(hero => hero.Position);
@@ -89,7 +98,7 @@ public class MazeMaster : MonoBehaviour
 			// Increment and check the index
 			if (++_activeIndex > _players.Count - 1)
 				_activeIndex = 0;
-			// TODO: Shift the camera?
+			// Snap to the next player
 			_camera.target = _players[_activeIndex].gameObject;
 			// Set the player position in the UI
 			SetWorldStatus(_players[_activeIndex].Position);
@@ -110,8 +119,7 @@ public class MazeMaster : MonoBehaviour
 		// Disable the game UI
 		_statusUI.gameObject.SetActive(false);
 		// Enable the status report
-		_reportUI.gameObject.SetActive(true);
-		// TODO: Set info
+		_reportUI.ShowEndScreen(succeded);
 	}
 
 	private void SetWorldStatus(MazePosition position)

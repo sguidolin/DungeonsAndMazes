@@ -326,7 +326,7 @@ MonoBehaviour:
   _worldSeed: {fileID: 986646838}
   _gameReport: {fileID: 651028824}
   _statusUI: {fileID: 161139887}
-  _reportUI: {fileID: 1442601897}
+  _reportUI: {fileID: 1691045447}
 --- !u!4 &127854974
 Transform:
   m_ObjectHideFlags: 0
@@ -1054,7 +1054,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Click here to go back to the main menu
+  m_text: Click here to go back to the Menu
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 168c08d7250cb364782bf91aec6eb887, type: 2}
   m_sharedMaterial: {fileID: 6275899917731625721, guid: 168c08d7250cb364782bf91aec6eb887,
@@ -1266,7 +1266,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Game Over
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 168c08d7250cb364782bf91aec6eb887, type: 2}
   m_sharedMaterial: {fileID: 6275899917731625721, guid: 168c08d7250cb364782bf91aec6eb887,
@@ -1300,7 +1300,7 @@ MonoBehaviour:
   m_enableAutoSizing: 1
   m_fontSizeMin: 96
   m_fontSizeMax: 144
-  m_fontStyle: 0
+  m_fontStyle: 2
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -2058,6 +2058,7 @@ GameObject:
   - component: {fileID: 1691045443}
   - component: {fileID: 1691045442}
   - component: {fileID: 1691045446}
+  - component: {fileID: 1691045447}
   m_Layer: 5
   m_Name: UI
   m_TagString: Untagged
@@ -2164,6 +2165,20 @@ MonoBehaviour:
   _menu: {fileID: 276626668}
   _deactivate:
   - {fileID: 161139883}
+--- !u!114 &1691045447
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1691045441}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7d0cc087ccc6f946a72ba379d1fe48f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  target: {fileID: 1442601897}
+  result: {fileID: 651028824}
 --- !u!1 &1805649583
 GameObject:
   m_ObjectHideFlags: 0

@@ -6,12 +6,8 @@ public class MazeDeathPit : MazeEvent
 {
 	public override IEnumerator OnEventTrigger(ActorController caller)
 	{
-		using (caller.Busy())
-		{
-			// Trigger the death
-			caller.OnDeath("Fall");
-			// TODO: Trigger game over
-			yield return null;
-		}
+		// Trigger the death
+		caller.OnDeath("Fall");
+		yield return null;
 	}
 }
