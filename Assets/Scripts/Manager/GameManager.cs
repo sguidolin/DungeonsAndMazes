@@ -12,6 +12,9 @@ public class GameManager : MonoBehaviour
 	[WriteOnlyInEditor] public bool allowTunnels = true;
 	public bool customSettings = false;
 
+	public bool gameOver = false;
+	public bool paused = false;
+
 	[HideInInspector]
 	public MazeGridLayout grid;
 	[HideInInspector]

@@ -4,6 +4,7 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.SceneManagement;
 
 [DisallowMultipleComponent]
 public class MazeMaster : MonoBehaviour
@@ -18,6 +19,13 @@ public class MazeMaster : MonoBehaviour
 	private TextMeshProUGUI _worldPosition;
 	[SerializeField]
 	private TextMeshProUGUI _worldSeed;
+	[SerializeField]
+	private TextMeshProUGUI _gameReport;
+
+	[SerializeField]
+	private Canvas _statusUI;
+	[SerializeField]
+	private Canvas _reportUI;
 
 	private int _activeIndex = 0;
 	private List<HeroController> _players;
@@ -31,8 +39,13 @@ public class MazeMaster : MonoBehaviour
 	{
 		Assert.IsNotNull(_camera, "Camera not set!");
 		Assert.IsNotNull(_actor, "Actor not initialized!");
+		Assert.IsNotNull(_statusUI, "Stats UI not initialized!");
+		Assert.IsNotNull(_reportUI, "Report UI not initialized!");
 		// Set the game manager instance
 		GameManager.Instance.master = this;
+		// Reset the values
+		GameManager.Instance.gameOver = false;
+		Time.timeScale = 1f;
 	}
 
 	IEnumerator Start()
@@ -63,16 +76,42 @@ public class MazeMaster : MonoBehaviour
 	public void OnTurnCompleted()
 	{
 		// Evaluate turn end status for the active player
-		// Increment and check the index
-		if (++_activeIndex > _players.Count - 1)
-			_activeIndex = 0;
-		// TODO: Shift the camera?
-		_camera.target = _players[_activeIndex].gameObject;
-		// Set the player position in the UI
-		SetWorldStatus(_players[_activeIndex].Position);
-		// The next player turn starts
-		// We check for events to enable the UI warnings
-		_players[_activeIndex].LookForEventsInProximity();
+		if (!_players[_activeIndex].IsAlive)
+		{
+			// Remove the player from the queue
+			_players.RemoveAt(_activeIndex);
+			// Decrement the index to normalize it
+			_activeIndex--;
+		}
+
+		if (_players.Any<HeroController>(player => player.IsAlive))
+		{
+			// Increment and check the index
+			if (++_activeIndex > _players.Count - 1)
+				_activeIndex = 0;
+			// TODO: Shift the camera?
+			_camera.target = _players[_activeIndex].gameObject;
+			// Set the player position in the UI
+			SetWorldStatus(_players[_activeIndex].Position);
+			// The next player turn starts
+			// We check for events to enable the UI warnings
+			_players[_activeIndex].LookForEventsInProximity();
+		}
+		else
+		{
+			// Call the game over with a failure result
+			OnGameEnded(false);
+		}
+	}
+
+	public void OnGameEnded(bool succeded)
+	{
+		GameManager.Instance.gameOver = true;
+		// Disable the game UI
+		_statusUI.gameObject.SetActive(false);
+		// Enable the status report
+		_reportUI.gameObject.SetActive(true);
+		// TODO: Set info
 	}
 
 	private void SetWorldStatus(MazePosition position)
@@ -88,6 +127,9 @@ public class MazeMaster : MonoBehaviour
 
 	public bool IsActiveTurn(HeroController actor)
 		=> actor.playerIndex == _activeIndex;
+
+	public void BackToMenu()
+		=> SceneManager.LoadScene("Menu");
 
 	public static MazeMaster Instance => GameManager.Instance.master;
 }

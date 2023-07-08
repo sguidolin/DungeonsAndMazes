@@ -1,8 +1,8 @@
 using System.Collections;
-using System.Linq;
 using System.Text;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 [DisallowMultipleComponent]
@@ -34,7 +34,7 @@ public class MazeGridViewer : MonoBehaviour
 			display != null;
 	}
 
-	void Start() => Generate();
+	//void Start() => Generate();
 
 	public void Generate()
 	{
@@ -53,7 +53,7 @@ public class MazeGridViewer : MonoBehaviour
 
 		int depth = (int)depthSlider.value;
 		int width = (int)widthSlider.value;
-		float fillRatio = ratioSlider.value;
+		float fillRatio = ratioSlider.value / 100f;
 
 		_isGenerating = true;
 		display.text = "Generating...";
@@ -83,9 +83,9 @@ public class MazeGridViewer : MonoBehaviour
 
 	private void PrintDungeon(System.DateTime started, MazeGrid grid)
 	{
-		float elapsed = (float)((System.DateTime.Now - started).TotalSeconds);
-		byte minutes = (byte)Mathf.FloorToInt(elapsed / 60);
-		byte seconds = (byte)Mathf.FloorToInt(elapsed % 60);
+		//float elapsed = (float)((System.DateTime.Now - started).TotalSeconds);
+		//byte minutes = (byte)Mathf.FloorToInt(elapsed / 60);
+		//byte seconds = (byte)Mathf.FloorToInt(elapsed % 60);
 		StringBuilder layout = new StringBuilder();
 		layout.AppendLine($"Seed: {_grid.Seed}");
 		layout.AppendLine($"Grid is {_grid.Depth} deep and {_grid.Width} wide, with {_grid.Capacity} tiles.");
@@ -105,10 +105,17 @@ public class MazeGridViewer : MonoBehaviour
 				layout.AppendFormat(colorFormat, _grid[x, y]);
 			}
 		}
+		//if (_grid.IsGenerated)
+		//	layout.AppendLine($"\n\nGenerated in {Mathf.RoundToInt(elapsed)} seconds. Laid {_grid.Tiled} ({((float)_grid.Tiled / (float)_grid.Capacity).ToString("P2")}) tiles.");
+		//else
+		//	layout.AppendLine($"\n\nGenerating... {_grid.Tiled} out of {_grid.Tiles}. Elapsed: {string.Format("{0:00}:{1:00}", minutes, seconds)}");
 		if (_grid.IsGenerated)
-			layout.AppendLine($"\n\nGenerated in {Mathf.RoundToInt(elapsed)} seconds. Laid {_grid.Tiled} ({((float)_grid.Tiled / (float)_grid.Capacity).ToString("P2")}) tiles.");
+			layout.AppendLine($"\n\nDone! Laid {_grid.Tiled} ({((float)_grid.Tiled / (float)_grid.Capacity).ToString("P2")}) tiles.");
 		else
-			layout.AppendLine($"\n\nGenerating... {_grid.Tiled} out of {_grid.Tiles}. Elapsed: {string.Format("{0:00}:{1:00}", minutes, seconds)}");
+			layout.AppendLine($"\n\nGenerating... {_grid.Tiled} out of {_grid.Tiles}.");
 		if (display) display.text = layout.ToString();
 	}
+
+	public void BackToMenu()
+		=> SceneManager.LoadScene("Menu");
 }
