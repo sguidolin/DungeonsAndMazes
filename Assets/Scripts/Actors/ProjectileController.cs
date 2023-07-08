@@ -31,6 +31,11 @@ public class ProjectileController : ActorController
 			yield return Move(direction.ToVector2());
 			// TODO: We need to evaluate if we hit the player or a monster
 			// If we hit anything we should handle it and also make some other animation?
+			if (MazeMaster.Instance.PlayerPositions.Any<MazePosition>(player => player == _position))
+				Debug.Log("Player hit!");
+			else if (MazeMaster.Instance.MonsterPositions.Any<MazePosition>(monster => monster == _position))
+				Debug.Log("Monster hit!");
+
 			direction = MazeUtilities.RotationToDirection(transform.rotation);
 			// Need to figure out how to update orientation
 			// If the current direction is not a legal move we set the death
@@ -42,7 +47,7 @@ public class ProjectileController : ActorController
 		// Swap the monster with any free room that wasn't discovered yet
 		// If the entire map was somehow revealed, any free room is fine
 		foreach (MazeRoom monster in nests) MazeEvent.Swap(monster, MazeGrid.Instance.GetFreeRoom(true));
-		// Trigger the death animation, which will invoke OnDeath
+		// Trigger the death animation
 		SetAnimatorTrigger("Dead");
 		IsTraveling = false;
 	}

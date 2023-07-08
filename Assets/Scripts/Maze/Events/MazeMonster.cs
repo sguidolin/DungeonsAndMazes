@@ -6,11 +6,12 @@ public class MazeMonster : MazeEvent
 {
 	public override IEnumerator OnEventTrigger(ActorController caller)
 	{
-		// Begin death animation
-		caller.SetAnimatorTrigger("Dead");
-		// Flag the actor as dead
-		caller.FlagAsDead();
-		// TODO: Trigger game over
-		yield return null;
+		using (caller.Busy())
+		{
+			// Trigger the death
+			caller.OnDeath("Fall");
+			// TODO: Trigger game over
+			yield return null;
+		}
 	}
 }

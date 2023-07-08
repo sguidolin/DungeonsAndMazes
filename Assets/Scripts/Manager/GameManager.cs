@@ -8,10 +8,14 @@ public class GameManager : MonoBehaviour
 	[WriteOnlyInEditor] public string seed = "";
 	[WriteOnlyInEditor] public int depth = 20;
 	[WriteOnlyInEditor] public int width = 20;
-	[WriteOnlyInEditor] public float fillRatio = 0.5f;
-	[WriteOnlyInEditor] public bool allowOverfilling = true;
+	[WriteOnlyInEditor] public float fillRatio = 1f;
+	[WriteOnlyInEditor] public bool allowTunnels = true;
+	public bool customSettings = false;
 
+	[HideInInspector]
 	public MazeGridLayout grid;
+	[HideInInspector]
+	public MazeMaster master;
 
 	#region Singleton Instance
 	private static GameManager _instance = null;

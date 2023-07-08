@@ -52,23 +52,17 @@ public class MazeRoom : MonoBehaviour
 	public void SetEvent(MazeEvent @event)
 	{
 		_event = @event;
-		// Spawn the contents of the event
-		_eventInstance = Instantiate(@event.prefab, transform);
-	}
-	public void SetEvent(MazeEvent @event, GameObject instance)
-	{
-		_event = @event;
-		if (instance == null)
+		// If we have an instance, we clear it
+		if (_eventInstance != null)
 		{
-			// If we passed a null, we destroy our current reference
-			if (_eventInstance != null) Destroy(_eventInstance);
+			Destroy(_eventInstance);
+			_eventInstance = null;
 		}
-		else
+		// If we passed an event and it has a prefab
+		if (@event != null && @event.prefab != null)
 		{
-			// Move the event instance down this object
-			instance.transform.parent = this.transform;
-			// Update the event instance
-			_eventInstance = instance;
+			// Spawn the a new instance for the event prefab
+			_eventInstance = Instantiate(@event.prefab, transform);
 		}
 	}
 

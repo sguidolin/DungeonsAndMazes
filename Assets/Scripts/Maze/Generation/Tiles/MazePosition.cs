@@ -72,6 +72,6 @@ public struct MazePosition
 	public override int GetHashCode()
 		=> base.GetHashCode();
 
-	public override string ToString() => $"({x}, {y})";
+	public override string ToString() => $"({x},{y})";
 	#endregion
 }

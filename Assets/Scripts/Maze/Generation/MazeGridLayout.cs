@@ -48,8 +48,11 @@ public class MazeGridLayout : MonoBehaviour
 	private MazeGrid _grid;
 	private MazeRoom[,] _rooms;
 
+	public string Seed => _seed;
+	// Calculate the % that has been revealed
+	public float Revealed =>
+		((float)_rooms.Flatten<MazeRoom>().Count<MazeRoom>(room => room.IsVisible) / (float)_grid.Tiled) * 100f;
 	public bool IsGenerated { get; private set; } = false;
-	public string Status { get; private set; } = string.Empty;
 
 	void Awake()
 	{
@@ -59,6 +62,16 @@ public class MazeGridLayout : MonoBehaviour
 
 	IEnumerator Start()
 	{
+		// Load from game manager if the settings were initialized
+		if (GameManager.Instance.customSettings)
+		{
+			_seed = GameManager.Instance.seed;
+			_depth = GameManager.Instance.depth;
+			_width = GameManager.Instance.width;
+			_fillRatio = GameManager.Instance.fillRatio;
+			_allowTunnels = GameManager.Instance.allowTunnels;
+		}
+
 		// Generate a random seed if none is provided
 		if (string.IsNullOrEmpty(_seed))
 			_seed = RandomSeedGenerator.NewSeed();
@@ -92,12 +105,10 @@ public class MazeGridLayout : MonoBehaviour
 		}
 		// Flag process as complete
 		IsGenerated = true;
-		Status = "Done!";
 	}
 
 	private IEnumerator BuildGrid()
 	{
-		Status = "Carving the maze...";
 		IEnumerator builder = _grid.Generate();
 		while (builder.MoveNext())
 		{
@@ -109,7 +120,6 @@ public class MazeGridLayout : MonoBehaviour
 
 	private IEnumerator BuildLayout()
 	{
-		Status = "Placing the tiles...";
 		for (int x = 0; x < _grid.Depth; x++)
 		{
 			for (int y = 0; y < _grid.Width; y++)
@@ -153,7 +163,6 @@ public class MazeGridLayout : MonoBehaviour
 
 	private IEnumerator BuildEvents()
 	{
-		Status = "Generating events...";
 		// Spawn Monster
 		MazeEvent.Spawn<MazeMonster>(
 			_events,
