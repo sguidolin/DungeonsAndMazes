@@ -125,16 +125,20 @@ public static class MazeNavigation
 					// If the navigation mode asks for rotation, then calculate
 					if (mode == MazeNavigationMode.RotateTowards)
 					{
-						// Calculate the rotation for the applied movement
-						Quaternion rotation = Quaternion.LookRotation(
-							actor.transform.position - previousPosition, Vector3.up
-						);
-						// Apply the rotation with some smoothing
-						actor.transform.rotation = Quaternion.Slerp(
-							actor.transform.rotation, rotation, ROTATION_HARDNESS
-						);
-						// Update the previous position for the next calculation
-						previousPosition = actor.transform.position;
+						// Check the timescale in order to avoid issues with LookRotation
+						if (Time.timeScale > 0f)
+						{
+							// Calculate the rotation for the applied movement
+							Quaternion rotation = Quaternion.LookRotation(
+								actor.transform.position - previousPosition, Vector3.up
+							);
+							// Apply the rotation with some smoothing
+							actor.transform.rotation = Quaternion.Slerp(
+								actor.transform.rotation, rotation, ROTATION_HARDNESS
+							);
+							// Update the previous position for the next calculation
+							previousPosition = actor.transform.position;
+						}
 					}
 					// Set the visibility based on the room we're currently in
 					MazeRoom currentRoom = MazeGrid.Instance.FindRoomAt(actor.transform.position);
