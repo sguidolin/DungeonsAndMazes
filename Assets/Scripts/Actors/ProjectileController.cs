@@ -73,6 +73,8 @@ public class ProjectileController : ActorController
 		// Swap the monster with any free room that wasn't discovered yet
 		// If the entire map was somehow revealed, any free room is fine
 		foreach (MazeRoom monster in nests) MazeEvent.Swap(monster, MazeGrid.Instance.GetFreeRoom(true));
+		// Log the event
+		MazeMaster.Instance.Log("Your quest target has moved.");
 		// Trigger the death animation
 		SetAnimatorTrigger("Dead");
 		IsTraveling = false;

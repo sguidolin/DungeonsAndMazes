@@ -48,6 +48,8 @@ public class MazeMaster : MonoBehaviour
 	public IEnumerable<MazePosition> MonsterPositions
 		=> MazeGrid.Instance.GetEvents<MazeMonster>().Select<MazeRoom, MazePosition>(monster => monster.Position);
 
+	public bool IsMultiplayer => GameManager.Instance.playerCount > 1;
+
 	void Awake()
 	{
 		Assert.IsNotNull(_camera, "Camera not set!");
@@ -139,8 +141,6 @@ public class MazeMaster : MonoBehaviour
 			{
 				// Track what index we removed
 				int removed = _players.IndexOf(actor);
-				// Disable the Game Object
-				actor.gameObject.SetActive(false);
 				// Then remove the player
 				_players.Remove(actor);
 
@@ -167,7 +167,8 @@ public class MazeMaster : MonoBehaviour
 			// We check for events to enable the UI warnings
 			_players[_activeIndex].LookForEventsInProximity();
 
-			Log($"Player {_players[_activeIndex].identifier} turn begins!");
+			// Only log this if we're in a multiplayer instance
+			if (IsMultiplayer) Log($"Player {_players[_activeIndex].identifier} turn begins!");
 		}
 		else
 		{

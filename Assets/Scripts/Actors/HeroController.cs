@@ -54,7 +54,7 @@ public class HeroController : ActorController
 		// Setup the Player indetifier on the UI
 		_index.text = $"P{identifier}";
 		// Disable it for just one player
-		_index.gameObject.SetActive(GameManager.Instance.playerCount > 1);
+		_index.gameObject.SetActive(!MazeMaster.Instance.IsMultiplayer);
 		// Check for events close by
 		LookForEventsInProximity();
 	}
@@ -73,7 +73,8 @@ public class HeroController : ActorController
 					moveInput.x = 1f * Mathf.Sign(Input.GetAxis("Vertical"));
 				else if (Mathf.Abs(Input.GetAxis("Horizontal")) > 0f)
 					moveInput.y = 1f * Mathf.Sign(Input.GetAxis("Horizontal"));
-				if (moveInput != Vector2.zero)
+				// Make sure that we can move that way
+				if (moveInput != Vector2.zero && MazeGrid.Instance.IsMoveLegal(moveInput.ToDirection(), Position))
 				{
 					// The routine has a check built inside itself
 					// But to save up we will only start it when truly needed
@@ -211,6 +212,8 @@ public class HeroController : ActorController
 	{
 		// Apply a lock to the player
 		OnLockApplied();
+		// Hide the identifier
+		_index.gameObject.SetActive(false);
 		// Call the base method
 		base.OnDeath(trigger);
 	}
