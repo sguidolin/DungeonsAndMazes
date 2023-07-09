@@ -54,7 +54,7 @@ public class HeroController : ActorController
 		// Setup the Player indetifier on the UI
 		_index.text = $"P{identifier}";
 		// Disable it for just one player
-		_index.gameObject.SetActive(!MazeMaster.Instance.IsMultiplayer);
+		_index.gameObject.SetActive(MazeMaster.Instance.IsMultiplayer);
 		// Check for events close by
 		LookForEventsInProximity();
 	}
