@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using UnityEngine;
 
@@ -13,13 +14,14 @@ public class MazeGrid
 
 	private int[,] _map;
 	private MazeTile[,] _grid;
-	private MazePosition _spawn;
+	private MazePosition _start;
+	private List<MazePosition> _spawns;
 
 	public string Seed => _seed;
 	public int Width => _width;
 	public int Depth => _depth;
 	public MazeTile[,] Grid => _grid;
-	public MazePosition Spawn => _spawn;
+	public ReadOnlyCollection<MazePosition> Spawns => _spawns.AsReadOnly();
 
 	// Dungeon tiles capacity
 	public float Ratio => _fillRatio;
@@ -77,10 +79,12 @@ public class MazeGrid
 	{
 		// Flag as process started
 		IsGenerated = false;
+		// Initialize the spawn points
+		_spawns = new List<MazePosition>();
 		// Instantiate a list of workers
 		List<MazeWorker> workers = new List<MazeWorker>();
 		// Select the spawn position
-		_spawn = RandomPosition();
+		_start = RandomPosition();
 		// Scale the number of max workers to the size by a range from 2 to 4
 		int maxWorkers = Size / Random.Range(2, 5);
 		// Use a flag to ensure a drop in the spawn
@@ -99,7 +103,7 @@ public class MazeGrid
 					for (int n = 0; n < recruits; n++)
 					{
 						// Ensure that the spawn point has a worker
-						MazePosition deploy = spawned ? RandomPosition() : _spawn;
+						MazePosition deploy = spawned ? RandomPosition() : _start;
 						// Lifespan is decided randomly between half-size and size
 						workers.Add(new MazeWorker(MazeWorker.RandomLifespan(Size), deploy));
 						// Flag that at least one worker was dropped here
@@ -126,6 +130,18 @@ public class MazeGrid
 		}
 		// After we filled, we need to ensure that every point is connected to the spawn
 		yield return VerifyIntegrity(stepByStep);
+		// Now select the spawn points
+		for (int n = 0; n < GameManager.Instance.playerCount; n++)
+		{
+			MazePosition validPosition = new MazePosition();
+			do
+			{
+				validPosition = new MazePosition(Random.Range(0, _depth), Random.Range(0, _width));
+				// Look for a position that has been dug and isn't a spawn already
+			} while (_grid[validPosition.x, validPosition.y].Value == 0 || _spawns.Contains(validPosition));
+			// Then add it to the spawn points
+			_spawns.Add(validPosition);
+		}
 		// Update the process status
 		IsGenerated = true;
 	}
@@ -135,7 +151,9 @@ public class MazeGrid
 		while (true)
 		{
 			// Generate the integrity map
-			_map = MazeNavigation.GetIntegrityMap(this, _spawn);
+			// It's always based on the first spawn
+			// Everything else is connected regardless because they connect to the first one
+			_map = MazeNavigation.GetIntegrityMap(this, _start);
 			// Find any tile that is disconnected
 			IEnumerable<MazePosition> leftovers =
 				MazeNavigation.GetDisconnectedPositions(this, _map);
@@ -143,10 +161,10 @@ public class MazeGrid
 			{
 				// Get the closest position
 				MazePosition closest = leftovers
-					.OrderBy<MazePosition, int>(position => MazePosition.Distance(position, _spawn))
+					.OrderBy<MazePosition, int>(position => MazePosition.Distance(position, _start))
 					.First<MazePosition>();
 				// Calculate the navigation path
-				MazeNavigationTile path = MazeNavigation.GetNavigationPath(this, closest, _spawn);
+				MazeNavigationTile path = MazeNavigation.GetNavigationPath(this, closest, _start);
 				// Get all the positions we visited
 				MazePosition[] points = path.GetRecursivePath().ToArray<MazePosition>();
 				for (int index = 1; index < points.Length; index++)
@@ -232,7 +250,8 @@ public class MazeGrid
 
 	// A tunnel must be in the combo list, and not hold an event
 	public static bool CanBeTunnel(MazeRoom room)
-		=> room != null && room.Event == null && TUNNEL_ROOMS.Contains<MazeTile>(room.Tile);
+		=> room != null && room.Event == null && TUNNEL_ROOMS.Contains<MazeTile>(room.Tile)
+			&& !Instance.IsSpawnRoom(room);
 	// An event must not be a tunnel, and be an actual room (not a filled block)
 	public static bool CanBeEvent(MazeRoom room)
 		=> room != null && !room.IsTunnel && room.Tile != MazeTile.Block;

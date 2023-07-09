@@ -12,6 +12,9 @@ public class GameManager : MonoBehaviour
 	[WriteOnlyInEditor] public bool allowTunnels = true;
 	public bool customSettings = false;
 
+	[Header("Game Status")]
+	[Range(1, 8)]
+	public int playerCount = 1;
 	public bool gameOver = false;
 	public bool paused = false;
 

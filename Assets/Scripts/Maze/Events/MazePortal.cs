@@ -7,7 +7,7 @@ public class MazePortal : MazeEvent
 	[Min(0f)]
 	public float travelTime = 1f;
 
-	public override IEnumerator OnEventTrigger(ActorController caller)
+	public override IEnumerator OnEventTrigger(HeroController caller)
 	{
 		using (caller.Busy())
 		{
@@ -22,6 +22,8 @@ public class MazePortal : MazeEvent
 			caller.SetPositionAndMove(target);
 			// End teleport animation
 			caller.SetAnimatorFlag("IsTeleporting", false);
+			// Log the event
+			MazeMaster.Instance.Log($"Player {caller.identifier} was teleported somewhere!");
 			yield return null;
 		}
 	}

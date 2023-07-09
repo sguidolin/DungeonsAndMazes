@@ -93,7 +93,7 @@ public class MazeGridViewer : MonoBehaviour
 			for (int y = 0; y < grid.Width; y++)
 			{
 				string colorFormat = "{0}";
-				if (_grid.Spawn == new MazePosition(x, y))
+				if (_grid.Spawns.Contains(new MazePosition(x, y)))
 					colorFormat = "<color=blue>{0}</color>";
 				//else
 				//{

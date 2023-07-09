@@ -9,6 +9,7 @@ using UnityEngine.Assertions;
 public class HeroController : ActorController
 {
 	public int playerIndex;
+	public int identifier;
 
 	[Header("Projectiles Configuration")]
 	private int _projectilesShot = 0;
@@ -18,6 +19,8 @@ public class HeroController : ActorController
 	private ProjectileController _projectile;
 
 	[Header("UI Settings")]
+	[SerializeField]
+	private TextMeshPro _index;
 	[SerializeField]
 	private GameObject _compass;
 	[SerializeField]
@@ -38,14 +41,6 @@ public class HeroController : ActorController
 		_renderer.enabled = false;
 		// Wait for the grid to be completely generated before spawning
 		yield return MazeGrid.Instance.IsGenerating();
-		// Find a fitting position to spawn
-		MazeRoom spawn = MazeGrid.Instance.GetSpawnRoom();
-		// Place the player in there
-		transform.position = spawn.WorldPosition;
-		_position = spawn.Position;
-		// Make the spawn appear
-		// Manually this time
-		yield return spawn.RevealRoom(0f);
 		// Enable the sprite
 		_renderer.enabled = true;
 		// Enable the elements to see while standing still
@@ -54,6 +49,12 @@ public class HeroController : ActorController
 		_isAlive = true;
 		// Setup the ammunitions text
 		_ammunitions.text = $"{_projectilesAvailable}/{_projectilesAvailable}";
+		// Save the starting index + 1 (i.e. Player 1 would have an index of 0)
+		identifier = playerIndex + 1;
+		// Setup the Player indetifier on the UI
+		_index.text = $"P{identifier}";
+		// Disable it for just one player
+		_index.gameObject.SetActive(GameManager.Instance.playerCount > 1);
 		// Check for events close by
 		LookForEventsInProximity();
 	}
@@ -188,13 +189,15 @@ public class HeroController : ActorController
 				_ammunitions.text = $"{_projectilesAvailable - _projectilesShot}/{_projectilesAvailable}";
 				// Destroy the arrow instance since it's done
 				Destroy(instance);
-
-				if (_projectilesAvailable - _projectilesShot <= 0)
+				// Only decrement ammo if we're alive, because if the actor is done it won't matter
+				if (_isAlive && _projectilesAvailable - _projectilesShot <= 0)
 				{
 					if (MazeMaster.Instance.MonsterPositions.Any<MazePosition>())
 					{
-						// Trigger a game over
-						MazeMaster.Instance.OnGameEnded(false);
+						// Trigger the player end status
+						OnDeath("FadeOut");
+						// Log the event
+						MazeMaster.Instance.Log($"Player {identifier} ran out of ammo. They're out!");
 					}
 				}
 			}

@@ -32,10 +32,16 @@ public class ProjectileController : ActorController
 			// Check if we hit a player or a monster
 			if (MazeMaster.Instance.PlayerPositions.Any<MazePosition>(player => player == _position))
 			{
-				// Projectile hit the player, call the on death event
-				MazeMaster.Instance.ActivePlayer.OnDeath("Dead");
-				// And then trigger the game over
-				MazeMaster.Instance.OnGameEnded(false);
+				IEnumerable<HeroController> playersHit = MazeMaster.Instance.Players
+					.Where<HeroController>(player => player.Position == _position);
+				// Call the on death event for each player hit
+				foreach (HeroController player in playersHit)
+				{
+					// Trigger death
+					player.OnDeath("Dead");
+					// Log the event
+					MazeMaster.Instance.Log($"Player {player.identifier} was hit!");
+				}
 				// Force exit
 				IsTraveling = false;
 				yield break;
@@ -45,6 +51,8 @@ public class ProjectileController : ActorController
 				MazeRoom monsterRoom = MazeGrid.Instance.GetRoomAt(_position);
 				// Destroy the event
 				monsterRoom.SetEvent(null);
+				// Log the event
+				MazeMaster.Instance.Log($"Player {MazeMaster.Instance.ActivePlayer.identifier} defeated the monster!");
 				// Do a little dance, we killed the monster
 				MazeMaster.Instance.ActivePlayer.OnVictory();
 				// Trigger the victory screen

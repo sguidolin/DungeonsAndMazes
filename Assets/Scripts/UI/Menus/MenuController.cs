@@ -17,6 +17,7 @@ public class MenuController : MonoBehaviour
 	public Slider ratioSlider;
 	public Toggle allowTunnels;
 	public TextMeshProUGUI toggleTunnels;
+	public Slider playerCount;
 
 	void Awake()
 	{
@@ -26,6 +27,7 @@ public class MenuController : MonoBehaviour
 		Assert.IsNotNull(widthSlider);
 		Assert.IsNotNull(ratioSlider);
 		Assert.IsNotNull(allowTunnels);
+		Assert.IsNotNull(playerCount);
 	}
 
 	void Start()
@@ -53,6 +55,18 @@ public class MenuController : MonoBehaviour
 			GameManager.Instance.width = (int)widthSlider.value;
 			GameManager.Instance.fillRatio = ratioSlider.value / 100f;
 			GameManager.Instance.allowTunnels = allowTunnels.isOn;
+			GameManager.Instance.playerCount = (int)playerCount.value;
+		}
+		else
+		{
+			// Reset defaults
+			GameManager.Instance.seed = string.Empty;
+
+			GameManager.Instance.depth = 20;
+			GameManager.Instance.width = 20;
+			GameManager.Instance.fillRatio = 1f;
+			GameManager.Instance.allowTunnels = true;
+			GameManager.Instance.playerCount = 1;
 		}
 
 		SceneManager.LoadScene("Loading");

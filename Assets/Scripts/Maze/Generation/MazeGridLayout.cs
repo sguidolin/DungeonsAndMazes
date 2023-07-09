@@ -10,9 +10,9 @@ public class MazeGridLayout : MonoBehaviour
 	[SerializeField]
 	private string _seed;
 
-	[SerializeField, Range(5, 50)]
+	[SerializeField, Range(10, 50)]
 	private int _depth = 20;
-	[SerializeField, Range(5, 50)]
+	[SerializeField, Range(10, 50)]
 	private int _width = 20;
 	[SerializeField, Range(0.25f, 1f)]
 	private float _fillRatio = 0.5f;
@@ -132,7 +132,7 @@ public class MazeGridLayout : MonoBehaviour
 				// FirstOrDefault returns null when no match is found for a class
 				MazeRoom blueprint = _blueprints.GetRandomTile(room => room.Tile == _grid[x, y]);
 				// Now we need to check if we could place a tunnel here
-				if (_allowTunnels && _grid.Spawn != new MazePosition(x, y))
+				if (_allowTunnels && !_grid.Spawns.Contains(new MazePosition(x, y)))
 				{
 					float tunnelChance = _tunnelChance;
 					// If it's a 4-way room I want the chance to be halved
@@ -165,6 +165,10 @@ public class MazeGridLayout : MonoBehaviour
 
 	private IEnumerator BuildEvents()
 	{
+		// Set the spawn rooms
+		foreach (MazePosition spawn in _grid.Spawns)
+			MazeEvent.SpawnAt<MazeSpawn>(_events, spawn, this);
+
 		// Spawn Monster
 		MazeEvent.Spawn<MazeMonster>(
 			_events,
@@ -195,7 +199,7 @@ public class MazeGridLayout : MonoBehaviour
 	{
 		MazeRoom currentRoom = GetRoomAt(currentPosition);
 		// Return the directions that match the room exits
-		return MazeTile.Cardinals.Where<MazeDirection>(dir => (dir & currentRoom.Tile) != 0);
+		return MazeTile.Cardinals.Where<MazeDirection>(direction => (direction & currentRoom.Tile) != 0);
 	}
 	public bool IsMoveLegal(MazeDirection direction, MazePosition currentPosition)
 	{
@@ -214,11 +218,6 @@ public class MazeGridLayout : MonoBehaviour
 		yield return RevealRoom(room);
 	}
 
-	public MazePosition GetSpawn()
-		=> _grid.Spawn;
-	public MazeRoom GetSpawnRoom()
-		=> GetRoomAt(_grid.Spawn);
-
 	public MazeRoom GetFreeRoom(bool forceHiddenRoom = false)
 	{
 		MazeRoom result = null;
@@ -230,7 +229,7 @@ public class MazeGridLayout : MonoBehaviour
 			// Rule is: room not empty (0), no events, not a tunnel
 			// Those are special rooms that are not considered available
 			// Also make sure we keep the spawn free, and the player isn't in the room
-			isValid = result != null && result.Tile.Value > 0 && result.Event == null && !result.IsTunnel && result != GetSpawnRoom()
+			isValid = result != null && result.Tile.Value > 0 && result.Event == null && !result.IsTunnel
 				&& !MazeMaster.Instance.PlayerPositions.Contains<MazePosition>(result.Position);
 			if (forceHiddenRoom && _Rooms.Any<MazeRoom>(room => !room.IsVisible))
 				isValid = isValid && !result.IsVisible;
@@ -245,6 +244,11 @@ public class MazeGridLayout : MonoBehaviour
 				return room;
 		return null;
 	}
+
+	public bool IsSpawnRoom(MazeRoom room)
+		=> _grid.Spawns.Contains(room.Position);
+	public MazeRoom GetSpawnAt(int index)
+		=> GetRoomAt(_grid.Spawns[index]);
 
 	public MazeRoom GetRoomAt(MazePosition position)
 		=> GetRoomAt(position.x, position.y);
