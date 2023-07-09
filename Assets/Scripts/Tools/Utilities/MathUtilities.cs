@@ -96,7 +96,7 @@ public static class MathUtilities
 	{
 		int remainder = value % multiple;
 		int result = value - remainder;
-		if (remainder > 0) // >= (multiple / 2)
+		if (remainder >= (multiple / 2))
 			result += multiple;
 		return result;
 	}

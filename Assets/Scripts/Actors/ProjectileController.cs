@@ -74,10 +74,6 @@ public class ProjectileController : ActorController
 	{
 		if (input != Vector2.zero)
 		{
-			//MazeRoom currentRoom = MazeGrid.WorldToRoom(transform.position);
-			//Debug.Log(currentRoom.Position);
-			//if (currentRoom != null)
-			//	_renderer.enabled = currentRoom.IsVisible;
 			// Convert input into a cardinal direction
 			MazeDirection movement = input.ToDirection();
 			// Calculate our navigation path

@@ -1,4 +1,3 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -121,7 +120,6 @@ public class HeroController : ActorController
 						triggers.Add("Pit");
 						break;
 				}
-				//Debug.Log($"{Position} Event detected in proximity: {@event.GetType()}");
 			}
 		}
 		_eventsForecast.SetEventForecast(triggers);
@@ -132,7 +130,6 @@ public class HeroController : ActorController
 		if (input != Vector2.zero)
 		{
 			// Reset the effects
-			//_eventsForecast.TrySetTrigger("None");
 			_eventsForecast.SetEventForecast();
 			// Convert input into a cardinal direction
 			MazeDirection movement = input.ToDirection();

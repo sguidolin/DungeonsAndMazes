@@ -29,7 +29,9 @@ public abstract class MazeEvent : ScriptableObject
 				} while (!MazeGrid.CanBeEvent(room));
 				// We ensure that the room wasn't null, otherwise it's worth to raise an exception
 				if (room == null) throw new System.Exception("Room cannot be null!");
-				//Debug.Log($"Spawning event \"{@event.name}\" at {room.Position}");
+#if UNITY_EDITOR
+				Debug.Log($"Spawning event \"{@event.name}\" at {room.Position}");
+#endif
 				room.SetEvent(Instantiate(@event));
 			}
 		}

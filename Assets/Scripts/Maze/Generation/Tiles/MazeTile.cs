@@ -52,7 +52,7 @@ public struct MazeTile
 
 
 	public static MazeDirection Block
-		=> (MazeDirection)0;
+		=> MazeDirection.None;
 	public static MazeDirection Open
 		=> MazeDirection.North | MazeDirection.South | MazeDirection.West | MazeDirection.West;
 	public static MazeDirection[] Cardinals =>

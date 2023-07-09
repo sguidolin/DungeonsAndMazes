@@ -127,7 +127,6 @@ public class MazeGridLayout : MonoBehaviour
 		{
 			for (int y = 0; y < _grid.Width; y++)
 			{
-				//Debug.Log($"Spawning room in ({x},{y})");
 				// Ignore non-accessible tiles
 				if (_grid[x, y] == MazeDirection.None) continue;
 				// FirstOrDefault returns null when no match is found for a class

@@ -88,7 +88,6 @@ public static class MazeUtilities
 			case float y when y >= 270f:
 				return MazeDirection.South;
 			default:
-				Debug.Log(angle);
 				return MazeDirection.None;
 		}
 	}

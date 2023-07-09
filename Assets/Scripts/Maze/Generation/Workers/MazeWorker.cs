@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using UnityEngine;
 
@@ -14,7 +13,6 @@ public class MazeWorker
 
 	// Random factors
 	private float _bias;
-	private float _indecisiveness;
 	private float _adventurous;
 
 	private List<MazeDirection> _choices;

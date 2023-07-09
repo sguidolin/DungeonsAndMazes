@@ -34,8 +34,6 @@ public class MazeGridViewer : MonoBehaviour
 			display != null;
 	}
 
-	//void Start() => Generate();
-
 	public void Generate()
 	{
 		if (_isGenerating) return;

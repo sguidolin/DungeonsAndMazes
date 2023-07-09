@@ -82,6 +82,12 @@ public class MazeMaster : MonoBehaviour
 		if (_worldSeed) _worldSeed.text = MazeGrid.Instance.Seed;
 	}
 
+	void OnDestroy()
+	{
+		// Invalidate the game manager instance
+		GameManager.Instance.master = null;
+	}
+
 	public void OnTurnCompleted()
 	{
 		// Evaluate turn end status for the active player
