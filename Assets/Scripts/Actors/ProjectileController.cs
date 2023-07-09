@@ -52,7 +52,7 @@ public class ProjectileController : ActorController
 				// Destroy the event
 				monsterRoom.SetEvent(null);
 				// Log the event
-				MazeMaster.Instance.Log($"Player {MazeMaster.Instance.ActivePlayer.identifier} defeated the monster!");
+				MazeMaster.Instance.Log($"Player {MazeMaster.Instance.ActivePlayer.identifier} defeated the quest target!");
 				// Do a little dance, we killed the monster
 				MazeMaster.Instance.ActivePlayer.OnVictory();
 				// Trigger the victory screen
