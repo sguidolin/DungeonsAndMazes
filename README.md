@@ -13,6 +13,7 @@ The player will be given 5 projectiles to find and shoot the target.
 
 : `Customize` -> Open the customization menu.
 
+* `Seed` = A string to generate the random instance that will control every random generation for the session. Use the same seed to challenge the same dungeon;
 * `Depth` & `Width` = The size of the maze;
 * `Ratio` = % of how many tiles will be filled (size is `Depth x Width`);
 * `Tunnels` = It's a toggle, by default it's on (`w/ = ON`, `w/o = OFF`);
