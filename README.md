@@ -1,5 +1,7 @@
 # Dungeons & Mazes
 
+[Download the game](https://drive.google.com/file/d/1bnGg8WMZSwnLIzybKA1WNOfrNXmp8pI1/view?usp=sharing)
+
 Little game about exploring a procedurally generated maze.
 
 Move with `WASD` and shoot projectiles with `IJKL`, in a `NWSE` pattern (North, West, South, East).
